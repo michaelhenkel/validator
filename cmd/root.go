@@ -26,9 +26,8 @@ func initConfig() {
 		panic(err)
 	}
 	ClientConfig = &validate.ClientConfig{
-		Name:      Name,
-		Namespace: Namespace,
-		Client:    client,
+		Name:   Name,
+		Client: client,
 	}
 }
 

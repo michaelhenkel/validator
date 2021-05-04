@@ -10,7 +10,7 @@
             "request": "launch",
             "mode": "auto",
             "program": "/Users/mhenkel/go/src/github.com/michaelhenkel/validator/main.go",
-            "args": ["vrouter","minikube"]
+            "args": ["print","-n","contrail"]
         },
         {
             "name": "get pod",
