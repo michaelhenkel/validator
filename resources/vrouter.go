@@ -59,33 +59,14 @@ func (r *VrouterNode) Adder(g *graph.Graph) ([]graph.NodeInterface, error) {
 	for _, resource := range resourceList.Items {
 		resourceNode := &VrouterNode{
 			Resource: resource,
+			EdgeSelectors: []graph.EdgeSelector{{
+				NodeType: graph.Pod,
+				MatchValues: []graph.MatchValue{{
+					Value: map[string]string{"app": resource.Name},
+				}},
+			}},
 		}
 		graphNodeList = append(graphNodeList, resourceNode)
 	}
 	return graphNodeList, nil
 }
-
-/*
-
-func addVrouterToPodEdges(validator *Validator) error {
-	nodeList := validator.graph.GetNodesByNodeType(graph.Vrouter)
-	podNodeList := validator.graph.GetNodesByNodeType(graph.Pod)
-	for _, nodeInterface := range nodeList {
-		node, ok := nodeInterface.(*VrouterNode)
-		if !ok {
-			return fmt.Errorf("not a vrouter node")
-		}
-		for _, podNodeInterface := range podNodeList {
-			podNode, ok := podNodeInterface.(*PodNode)
-			if !ok {
-				return fmt.Errorf("not a pod node")
-			}
-			if appName, ok := podNode.Pod.Labels["app"]; ok && appName == node.Vrouter.Name {
-				validator.graph.AddEdge(node, podNode, "")
-			}
-
-		}
-	}
-	return nil
-}
-*/

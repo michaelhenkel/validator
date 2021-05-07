@@ -60,6 +60,9 @@ func (r *VirtualRouterNode) Adder(g *graph.Graph) ([]graph.NodeInterface, error)
 		r.Resource = virtualRouter
 		virtualRouterNode := &VirtualRouterNode{
 			Resource: virtualRouter,
+			EdgeLabels: []graph.EdgeLabel{{
+				Value: map[string]string{"VirtualRouterIP": string(virtualRouter.Spec.IPAddress)},
+			}},
 			Edges: []graph.NodeEdge{{
 				To: graph.Pod,
 				MatchValues: []map[string]string{{

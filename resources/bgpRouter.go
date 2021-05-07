@@ -59,6 +59,9 @@ func (r *BGPRouterNode) Adder(g *graph.Graph) ([]graph.NodeInterface, error) {
 		r.Resource = resource
 		resourceNode := &BGPRouterNode{
 			Resource: resource,
+			EdgeLabels: []graph.EdgeLabel{{
+				Value: map[string]string{"BGPRouterIP": string(resource.Spec.BGPRouterParameters.Address)},
+			}},
 		}
 		graphNodeList = append(graphNodeList, resourceNode)
 	}

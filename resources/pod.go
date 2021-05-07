@@ -107,6 +107,25 @@ func (r *PodNode) buildNodeList(filter string, g *graph.Graph, nodeType graph.No
 				}
 			}
 		}
+		var value = make(map[string]string)
+		var ntype graph.NodeType
+		switch nodeType {
+		case graph.Control:
+			value = map[string]string{"BGPRouterIP": resource.Status.PodIP}
+			ntype = graph.BGPRouter
+		case graph.Vrouter:
+			value = map[string]string{"VirtualRouterIP": resource.Status.PodIP}
+			ntype = graph.VirtualRouter
+		}
+
+		edgeSelector := graph.EdgeSelector{
+			NodeType: ntype,
+			MatchValues: []graph.MatchValue{{
+				Value: value,
+			}},
+		}
+		edgeSelectorList = append(edgeSelectorList, edgeSelector)
+
 		virtualRouterEdge := graph.NodeEdge{
 			To: graph.VirtualRouter,
 			MatchValues: []map[string]string{{
@@ -128,104 +147,11 @@ func (r *PodNode) buildNodeList(filter string, g *graph.Graph, nodeType graph.No
 			Resource:      resource,
 			Edges:         edgeList,
 			EdgeSelectors: edgeSelectorList,
+			EdgeLabels: []graph.EdgeLabel{{
+				Value: map[string]string{"app": filter},
+			}},
 		}
 		nodeInterfaceList = append(nodeInterfaceList, resourceNode)
 	}
 	return nodeInterfaceList, nil
 }
-
-/*
-
-func addPodNodes(validator *Validator, nodeType graph.NodeType) error {
-	var graphNode graph.Node
-	nodes := validator.graph.GetNodesByNodeType(nodeType)
-	switch nodeType {
-	case graph.Vrouter:
-		for _, nodeInterface := range nodes {
-			node, ok := nodeInterface.(*VrouterNode)
-			if !ok {
-				return fmt.Errorf("not a vrouter node")
-			}
-			opts := metav1.ListOptions{
-				LabelSelector: fmt.Sprintf("app=%s", node.Vrouter.Name),
-			}
-			pl, err := validator.clientConfig.Client.CoreV1.Pods("").List(context.Background(), opts)
-			if err != nil {
-				return err
-			}
-			for _, pod := range pl.Items {
-				node := NewPodNode(pod, graph.Vrouter)
-				graphNode = &node
-				validator.graph.AddNode(graphNode)
-			}
-		}
-	case graph.Control:
-		for _, nodeInterface := range nodes {
-			node, ok := nodeInterface.(*ControlNode)
-			if !ok {
-				return fmt.Errorf("not a vrouter node")
-			}
-			opts := metav1.ListOptions{
-				LabelSelector: fmt.Sprintf("app=%s", node.Control.Name),
-			}
-			pl, err := validator.clientConfig.Client.CoreV1.Pods("").List(context.Background(), opts)
-			if err != nil {
-				return err
-			}
-			for _, pod := range pl.Items {
-				node := NewPodNode(pod, graph.Control)
-				graphNode = &node
-				validator.graph.AddNode(graphNode)
-			}
-		}
-	}
-	return nil
-}
-
-func addPodToVirtualRouterEdges(validator *Validator) error {
-	virtualRouterNodeList := validator.graph.GetNodesByNodeType(graph.VirtualRouter)
-	podNodeList := validator.graph.GetNodesByNodeType(graph.Pod)
-	for _, podNodeInterface := range podNodeList {
-		podNode, ok := podNodeInterface.(*PodNode)
-		if !ok {
-			return fmt.Errorf("not a pod node")
-		}
-		if podNode.Owner == graph.Vrouter {
-			for _, nodeInterface := range virtualRouterNodeList {
-				node, ok := nodeInterface.(*VirtualRouterNode)
-				if !ok {
-					return fmt.Errorf("not a virtualRouter node")
-				}
-				if node.VirtualRouter.Spec.IPAddress == contrailcorev1alpha1.IPAddress(podNode.Pod.Status.PodIP) {
-					validator.graph.AddEdge(podNode, node, "")
-				}
-			}
-		}
-	}
-	return nil
-}
-
-func addPodToBGPRouterEdges(validator *Validator) error {
-	nodeList := validator.graph.GetNodesByNodeType(graph.BGPRouter)
-	podNodeList := validator.graph.GetNodesByNodeType(graph.Pod)
-	for _, podNodeInterface := range podNodeList {
-		podNode, ok := podNodeInterface.(*PodNode)
-		if !ok {
-			return fmt.Errorf("not a pod node")
-		}
-		if podNode.Owner == graph.Control {
-			for _, nodeInterface := range nodeList {
-				node, ok := nodeInterface.(*BGPRouterNode)
-				if !ok {
-					return fmt.Errorf("not a bgpRouter node")
-				}
-				if node.BGPRouter.Spec.BGPRouterParameters.Address == contrailcorev1alpha1.IPAddress(podNode.Pod.Status.PodIP) {
-					validator.graph.AddEdge(podNode, node, "")
-				}
-			}
-		}
-	}
-	return nil
-}
-
-*/
