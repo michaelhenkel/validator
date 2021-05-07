@@ -12,7 +12,6 @@ import (
 
 type PodNode struct {
 	Resource      corev1.Pod
-	Edges         []graph.NodeEdge
 	EdgeLabels    []graph.EdgeLabel
 	EdgeSelectors []graph.EdgeSelector
 }
@@ -36,10 +35,6 @@ func (r *PodNode) Name() string {
 
 func (r *PodNode) Type() graph.NodeType {
 	return graph.Pod
-}
-
-func (r *PodNode) GetNodeEdges() []graph.NodeEdge {
-	return r.Edges
 }
 
 func (r *PodNode) GetEdgeLabels() []graph.EdgeLabel {
@@ -87,16 +82,10 @@ func (r *PodNode) buildNodeList(filter string, g *graph.Graph, nodeType graph.No
 		return nil, err
 	}
 	for _, resource := range resourceList.Items {
-		var edgeList []graph.NodeEdge
 		var edgeSelectorList []graph.EdgeSelector
 		for _, volume := range resource.Spec.Volumes {
 			if volume.Name == "config-volume" {
 				if volume.VolumeSource.ConfigMap != nil {
-					nodeEdge := graph.NodeEdge{
-						To:          graph.ConfigMap,
-						MatchValues: []map[string]string{{"ConfigMap": volume.ConfigMap.Name}},
-					}
-					edgeList = append(edgeList, nodeEdge)
 					edgeSelector := graph.EdgeSelector{
 						NodeType: graph.ConfigMap,
 						MatchValues: []graph.MatchValue{{
@@ -126,26 +115,9 @@ func (r *PodNode) buildNodeList(filter string, g *graph.Graph, nodeType graph.No
 		}
 		edgeSelectorList = append(edgeSelectorList, edgeSelector)
 
-		virtualRouterEdge := graph.NodeEdge{
-			To: graph.VirtualRouter,
-			MatchValues: []map[string]string{{
-				"PodIP": resource.Status.PodIP,
-			}, {
-				"NodeType": string(nodeType),
-			}},
-		}
-		edgeList = append(edgeList, virtualRouterEdge)
-
-		bgpRouterEdge := graph.NodeEdge{
-			To:          graph.BGPRouter,
-			MatchValues: []map[string]string{{"PodIP": resource.Status.PodIP}},
-		}
-		edgeList = append(edgeList, bgpRouterEdge)
-
 		r.Resource = resource
 		resourceNode := &PodNode{
 			Resource:      resource,
-			Edges:         edgeList,
 			EdgeSelectors: edgeSelectorList,
 			EdgeLabels: []graph.EdgeLabel{{
 				Value: map[string]string{"app": filter},

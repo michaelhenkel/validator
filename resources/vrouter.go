@@ -12,7 +12,6 @@ import (
 
 type VrouterNode struct {
 	Resource      dpv1alpha1.Vrouter
-	Edges         []graph.NodeEdge
 	EdgeLabels    []graph.EdgeLabel
 	EdgeSelectors []graph.EdgeSelector
 }
@@ -36,10 +35,6 @@ func (r *VrouterNode) Name() string {
 
 func (r *VrouterNode) Type() graph.NodeType {
 	return graph.Vrouter
-}
-
-func (r *VrouterNode) GetNodeEdges() []graph.NodeEdge {
-	return r.Edges
 }
 
 func (r *VrouterNode) GetEdgeLabels() []graph.EdgeLabel {

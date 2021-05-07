@@ -11,7 +11,6 @@ import (
 
 type ConfigMapNode struct {
 	Resource      corev1.ConfigMap
-	Edges         []graph.NodeEdge
 	EdgeLabels    []graph.EdgeLabel
 	EdgeSelectors []graph.EdgeSelector
 }
@@ -35,10 +34,6 @@ func (r *ConfigMapNode) Name() string {
 
 func (r *ConfigMapNode) Type() graph.NodeType {
 	return graph.ConfigMap
-}
-
-func (r *ConfigMapNode) GetNodeEdges() []graph.NodeEdge {
-	return r.Edges
 }
 
 func (r *ConfigMapNode) GetEdgeLabels() []graph.EdgeLabel {
@@ -77,12 +72,14 @@ func (r *ConfigMapNode) Adder(g *graph.Graph) ([]graph.NodeInterface, error) {
 			}
 			resourceNode := &ConfigMapNode{
 				Resource: *configMap,
-				Edges: []graph.NodeEdge{{
-					To:          graph.Pod,
-					MatchValues: []map[string]string{{"ConfigMap": configMap.Name}},
-				}},
 				EdgeLabels: []graph.EdgeLabel{{
 					Value: map[string]string{"ConfigMap": configMap.Name},
+				}},
+				EdgeSelectors: []graph.EdgeSelector{{
+					NodeType: graph.ConfigFile,
+					MatchValues: []graph.MatchValue{{
+						Value: map[string]string{"ConfigMap": configMap.Name},
+					}},
 				}},
 			}
 			graphNodeList = append(graphNodeList, resourceNode)
@@ -90,34 +87,3 @@ func (r *ConfigMapNode) Adder(g *graph.Graph) ([]graph.NodeInterface, error) {
 	}
 	return graphNodeList, nil
 }
-
-/*
-
-func addConfigMapToPodEdges(validator *Validator, owner graph.NodeType) error {
-	nodeList := validator.graph.GetNodesByNodeType(graph.ConfigMap)
-	podNodeList := validator.graph.GetNodesByNodeType(graph.Pod)
-	for _, nodeInterface := range nodeList {
-		node, ok := nodeInterface.(*ConfigMapNode)
-		if !ok {
-			return fmt.Errorf("not a configMap node")
-		}
-		for _, podNodeInterface := range podNodeList {
-			podNode, ok := podNodeInterface.(*PodNode)
-			if !ok {
-				return fmt.Errorf("not a pod node")
-			}
-			if podNode.Owner == owner {
-				for _, volume := range podNode.Pod.Spec.Volumes {
-					if volume.Name == "config-volume" {
-						if volume.VolumeSource.ConfigMap != nil && volume.VolumeSource.ConfigMap.Name == node.ConfigMap.Name {
-							validator.graph.AddEdge(podNode, node, "")
-						}
-					}
-				}
-
-			}
-		}
-	}
-	return nil
-}
-*/

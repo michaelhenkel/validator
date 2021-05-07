@@ -33,6 +33,7 @@ require (
 	gonum.org/v1/gonum v0.0.0-20190331200053-3d26580ed485
 	gopkg.in/ini.v1 v1.51.0
 	gopkg.in/yaml.v2 v2.4.0
+	inet.af/netaddr v0.0.0-20210311133851-b21affee3d06 // indirect
 	k8s.io/api v0.20.2
 	k8s.io/apimachinery v0.21.0
 	k8s.io/client-go v0.21.0

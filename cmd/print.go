@@ -22,6 +22,6 @@ var printCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		g := builder.BuildGraph(Client)
 		g.String()
-		g.EdgeMatcher2()
+		g.EdgeMatcher()
 	},
 }

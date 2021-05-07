@@ -11,7 +11,6 @@ import (
 
 type BGPRouterNode struct {
 	Resource      contrailcorev1alpha1.BGPRouter
-	Edges         []graph.NodeEdge
 	EdgeLabels    []graph.EdgeLabel
 	EdgeSelectors []graph.EdgeSelector
 }
@@ -35,10 +34,6 @@ func (r *BGPRouterNode) Name() string {
 
 func (r *BGPRouterNode) Type() graph.NodeType {
 	return graph.BGPRouter
-}
-
-func (r *BGPRouterNode) GetNodeEdges() []graph.NodeEdge {
-	return r.Edges
 }
 
 func (r *BGPRouterNode) GetEdgeLabels() []graph.EdgeLabel {

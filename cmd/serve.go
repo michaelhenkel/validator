@@ -1,8 +1,10 @@
 package cmd
 
 import (
+	"fmt"
 	"net/http"
 
+	"github.com/michaelhenkel/validator/builder"
 	"github.com/spf13/cobra"
 )
 
@@ -27,18 +29,12 @@ var serveCmd = &cobra.Command{
 }
 
 func printGraph(w http.ResponseWriter, req *http.Request) {
-
-	/*
-		validator := validate.NewValidator(ClientConfig)
-		if err := validator.Validate(); err != nil {
-			panic(err)
-		}
-		page := validator.RenderPage()
-		if err := page.Render(w); err != nil {
-			panic(err)
-		}
-	*/
-
+	fmt.Println("bla")
+	g := builder.BuildGraph(Client)
+	page := builder.RenderPage(g)
+	if err := page.Render(w); err != nil {
+		panic(err)
+	}
 }
 
 func serve() {

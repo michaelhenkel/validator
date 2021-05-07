@@ -1,6 +1,7 @@
 package builder
 
 import (
+	"github.com/go-echarts/go-echarts/v2/components"
 	"github.com/michaelhenkel/validator/graph"
 	"github.com/michaelhenkel/validator/k8s/clientset"
 	"github.com/michaelhenkel/validator/resources"
@@ -25,7 +26,11 @@ func BuildGraph(clientConfig *clientset.Client) *graph.Graph {
 		NodeAdder(configFile.AdderFunc()).
 		NodeAdder(configMap.AdderFunc()).
 		NodeAdder(pod.AdderFunc()).
-		NodeAdder(vRouter.AdderFunc())
-
+		NodeAdder(vRouter.AdderFunc()).
+		EdgeMatcher()
 	return g
+}
+
+func RenderPage(g *graph.Graph) *components.Page {
+	return g.RenderPage()
 }

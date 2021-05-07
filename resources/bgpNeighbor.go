@@ -16,7 +16,6 @@ const (
 
 type BGPNeighborNode struct {
 	Resource      introspectcontrolv1alpha1.BgpNeighborResp
-	Edges         []graph.NodeEdge
 	EdgeLabels    []graph.EdgeLabel
 	EdgeSelectors []graph.EdgeSelector
 }
@@ -40,10 +39,6 @@ func (r *BGPNeighborNode) Name() string {
 
 func (r *BGPNeighborNode) Type() graph.NodeType {
 	return graph.BGPNeighbor
-}
-
-func (r *BGPNeighborNode) GetNodeEdges() []graph.NodeEdge {
-	return r.Edges
 }
 
 func (r *BGPNeighborNode) GetEdgeLabels() []graph.EdgeLabel {

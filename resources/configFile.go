@@ -15,7 +15,6 @@ type ConfigFile struct {
 
 type ConfigFileNode struct {
 	Resource      ConfigFile
-	Edges         []graph.NodeEdge
 	EdgeLabels    []graph.EdgeLabel
 	EdgeSelectors []graph.EdgeSelector
 }
@@ -39,10 +38,6 @@ func (r *ConfigFileNode) Name() string {
 
 func (r *ConfigFileNode) Type() graph.NodeType {
 	return graph.ConfigFile
-}
-
-func (r *ConfigFileNode) GetNodeEdges() []graph.NodeEdge {
-	return r.Edges
 }
 
 func (r *ConfigFileNode) GetEdgeLabels() []graph.EdgeLabel {
@@ -79,14 +74,18 @@ func (r *ConfigFileNode) Adder(g *graph.Graph) ([]graph.NodeInterface, error) {
 			if err != nil {
 				return nil, err
 			}
-			for k, v := range configMap.Data {
+			for cmDataKey, cmDataValue := range configMap.Data {
 				configFile := ConfigFile{
-					Name:   k,
-					Config: v,
+					Name:   cmDataKey,
+					Config: cmDataValue,
 				}
 				resourceNode := &ConfigFileNode{
 					Resource: configFile,
+					EdgeLabels: []graph.EdgeLabel{{
+						Value: map[string]string{"ConfigMap": k + "-configmap"},
+					}},
 				}
+
 				graphNodeList = append(graphNodeList, resourceNode)
 			}
 		}
@@ -95,29 +94,6 @@ func (r *ConfigFileNode) Adder(g *graph.Graph) ([]graph.NodeInterface, error) {
 }
 
 /*
-
-func addConfigFileToConfigMapEdges(validator *Validator) error {
-	configFileNodes := validator.graph.GetNodesByNodeType(graph.ConfigFile)
-	configMapNodes := validator.graph.GetNodesByNodeType(graph.ConfigMap)
-	for _, configMapNodeInterface := range configMapNodes {
-		configMapNode, ok := configMapNodeInterface.(*ConfigMapNode)
-		if !ok {
-			return fmt.Errorf("not a configMap node")
-		}
-		for _, configFileNodeInterface := range configFileNodes {
-			configFileNode, ok := configFileNodeInterface.(*ConfigFileNode)
-			if !ok {
-				return fmt.Errorf("not a configFile node")
-			}
-			for k := range configMapNode.ConfigMap.Data {
-				if k == configFileNode.ConfigFile.Name {
-					validator.graph.AddEdge(configMapNode, configFileNode, "")
-				}
-			}
-		}
-	}
-	return nil
-}
 
 func addConfigFileToVirtualRouterBGPRouterEdges(validator *Validator) error {
 	configFileNodes := validator.graph.GetNodesByNodeType(graph.ConfigFile)

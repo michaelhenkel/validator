@@ -12,7 +12,6 @@ import (
 
 type VirtualRouterNode struct {
 	Resource      contrailcorev1alpha1.VirtualRouter
-	Edges         []graph.NodeEdge
 	EdgeLabels    []graph.EdgeLabel
 	EdgeSelectors []graph.EdgeSelector
 }
@@ -38,10 +37,6 @@ func (r *VirtualRouterNode) Type() graph.NodeType {
 	return graph.VirtualRouter
 }
 
-func (r *VirtualRouterNode) GetNodeEdges() []graph.NodeEdge {
-	return r.Edges
-}
-
 func (r *VirtualRouterNode) GetEdgeLabels() []graph.EdgeLabel {
 	return r.EdgeLabels
 }
@@ -62,14 +57,6 @@ func (r *VirtualRouterNode) Adder(g *graph.Graph) ([]graph.NodeInterface, error)
 			Resource: virtualRouter,
 			EdgeLabels: []graph.EdgeLabel{{
 				Value: map[string]string{"VirtualRouterIP": string(virtualRouter.Spec.IPAddress)},
-			}},
-			Edges: []graph.NodeEdge{{
-				To: graph.Pod,
-				MatchValues: []map[string]string{{
-					"PodIP": string(virtualRouter.Spec.IPAddress),
-				}, {
-					"NodeType": string(graph.Vrouter),
-				}},
 			}},
 		}
 		graphNodeList = append(graphNodeList, virtualRouterNode)

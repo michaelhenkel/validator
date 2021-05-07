@@ -11,7 +11,6 @@ import (
 
 type ControlNode struct {
 	Resource      cpv1alpha1.Control
-	Edges         []graph.NodeEdge
 	EdgeLabels    []graph.EdgeLabel
 	EdgeSelectors []graph.EdgeSelector
 }
@@ -37,10 +36,6 @@ func (r *ControlNode) Type() graph.NodeType {
 	return graph.Control
 }
 
-func (r *ControlNode) GetNodeEdges() []graph.NodeEdge {
-	return r.Edges
-}
-
 func (r *ControlNode) GetEdgeLabels() []graph.EdgeLabel {
 	return r.EdgeLabels
 }
@@ -59,6 +54,17 @@ func (r *ControlNode) Adder(g *graph.Graph) ([]graph.NodeInterface, error) {
 		r.Resource = resource
 		nodeResource := &ControlNode{
 			Resource: resource,
+			EdgeSelectors: []graph.EdgeSelector{{
+				NodeType: graph.BGPRouter,
+				MatchValues: []graph.MatchValue{{
+					Value: map[string]string{"BGPRouterIP": resource.Spec.HostIP},
+				}},
+			}, {
+				NodeType: graph.Pod,
+				MatchValues: []graph.MatchValue{{
+					Value: map[string]string{"app": resource.Name},
+				}},
+			}},
 		}
 		graphNodeList = append(graphNodeList, nodeResource)
 	}
