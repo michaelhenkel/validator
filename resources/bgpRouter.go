@@ -62,6 +62,12 @@ func (r *BGPRouterNode) Adder(g *graph.Graph) ([]graph.NodeInterface, error) {
 			EdgeLabels: []graph.EdgeLabel{{
 				Value: map[string]string{"BGPRouterIP": string(resource.Spec.BGPRouterParameters.Address)},
 			}},
+			EdgeSelectors: []graph.EdgeSelector{{
+				NodeType: graph.BGPNeighbor,
+				MatchValues: []graph.MatchValue{{
+					Value: map[string]string{"BGPRouterNeighborLocalIP": string(resource.Spec.BGPRouterParameters.Address)},
+				}},
+			}},
 		}
 		graphNodeList = append(graphNodeList, resourceNode)
 	}

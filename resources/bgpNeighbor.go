@@ -84,6 +84,15 @@ func (r *BGPNeighborNode) Adder(g *graph.Graph) ([]graph.NodeInterface, error) {
 				r.Resource = resource
 				resourceNode := &BGPNeighborNode{
 					Resource: resource,
+					EdgeSelectors: []graph.EdgeSelector{{
+						NodeType: graph.VirtualRouter,
+						MatchValues: []graph.MatchValue{{
+							Value: map[string]string{"VirtualRouterIP": resource.PeerAddress.Text},
+						}},
+					}},
+					EdgeLabels: []graph.EdgeLabel{{
+						Value: map[string]string{"BGPRouterNeighborLocalIP": resource.LocalAddress.Text},
+					}},
 				}
 				graphNodeList = append(graphNodeList, resourceNode)
 			}
@@ -92,72 +101,3 @@ func (r *BGPNeighborNode) Adder(g *graph.Graph) ([]graph.NodeInterface, error) {
 
 	return graphNodeList, nil
 }
-
-/*
-
-func addBGPNeighborNodes(validator *Validator) error {
-	var graphNode graph.Node
-	podNodeList := validator.graph.GetNodesByNodeType(graph.Pod)
-	for _, podNodeInterface := range podNodeList {
-		podNode, ok := podNodeInterface.(*PodNode)
-		if !ok {
-			return fmt.Errorf("not a podNode")
-		}
-		if podNode.Owner == graph.Control {
-			bgpNeighborList, err := validator.clientConfig.Client.IntrospectClientV1.Control(podNode.Pod.Status.PodIP + ":" + introspectPort).BgpNeighbors().List(context.Background())
-			if err != nil {
-				return err
-			}
-			for _, bgpNeighbor := range bgpNeighborList.Neighbors.List.BgpNeighborResp {
-				node := NewBGPNeighborNode(bgpNeighbor)
-				graphNode = &node
-				validator.graph.AddNode(graphNode)
-			}
-		}
-	}
-	return nil
-}
-
-
-func addBGPNeighborToBgpRouterEdge(validator *Validator) error {
-	bgpRouterNodeList := validator.graph.GetNodesByNodeType(graph.BGPRouter)
-	bgpNighborNodeList := validator.graph.GetNodesByNodeType(graph.BGPNeighbor)
-	for _, bgpRouterNodeInterface := range bgpRouterNodeList {
-		bgpRouterNode, ok := bgpRouterNodeInterface.(*BGPRouterNode)
-		if !ok {
-			return fmt.Errorf("not a bgpRouterNode")
-		}
-		for _, bgpNeighborNodeInterface := range bgpNighborNodeList {
-			bgpNeighborNode, ok := bgpNeighborNodeInterface.(*BGPNeighborNode)
-			if !ok {
-				return fmt.Errorf("not a bgpNeighbor node")
-			}
-			if bgpRouterNode.BGPRouter.Spec.BGPRouterParameters.Address == contrailcorev1alpha1.IPAddress(bgpNeighborNode.BGPNeighbor.LocalAddress.Text) {
-				validator.graph.AddEdge(bgpRouterNode, bgpNeighborNode, "")
-			}
-		}
-	}
-	return nil
-}
-
-func addBGPNeighborToVirtualRouterEdge(validator *Validator) error {
-	virtualRouterNodeList := validator.graph.GetNodesByNodeType(graph.VirtualRouter)
-	bgpNighborNodeList := validator.graph.GetNodesByNodeType(graph.BGPNeighbor)
-	for _, virtualRouterNodeInterface := range virtualRouterNodeList {
-		virtualRouterNode, ok := virtualRouterNodeInterface.(*VirtualRouterNode)
-		if !ok {
-			return fmt.Errorf("not a virtualRouterNode")
-		}
-		for _, bgpNeighborNodeInterface := range bgpNighborNodeList {
-			bgpNeighborNode, ok := bgpNeighborNodeInterface.(*BGPNeighborNode)
-			if !ok {
-				return fmt.Errorf("not a bgpNeighbor node")
-			}
-			if virtualRouterNode.VirtualRouter.Spec.IPAddress == contrailcorev1alpha1.IPAddress(bgpNeighborNode.BGPNeighbor.PeerAddress.Text) {
-				validator.graph.AddEdge(bgpNeighborNode, virtualRouterNode, "")
-			}
-		}
-	}
-	return nil
-}
-*/
