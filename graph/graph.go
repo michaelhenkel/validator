@@ -16,42 +16,26 @@ type Category string
 type Shape string
 
 const (
-	Vrouter            NodeType = "vrouter"
-	VirtualRouter      NodeType = "virtualRouter"
-	Pod                NodeType = "pod"
-	Control            NodeType = "control"
-	BGPRouter          NodeType = "bgpRouter"
-	BGPNeighbor        NodeType = "bgpNeighbor"
-	ConfigMap          NodeType = "configMap"
-	ConfigFile         NodeType = "configFile"
-	DeploymentResource Shape    = "box"
-	ConfigResource     Shape    = "oval"
-	ConfigFileResource Shape    = "hexagon"
-	ConfigPlane        Plane    = "configPlane"
-	ControlPlane       Plane    = "controlPlane"
-	DataPlane          Plane    = "dataPlane"
-	ControlCategory    Category = "controlCategory"
-	DataCategory       Category = "dataCategory"
-	DeploymentCategory Category = "deploymentCategory"
+	Vrouter                 NodeType = "vrouter"
+	VirtualRouter           NodeType = "virtualRouter"
+	Pod                     NodeType = "pod"
+	Control                 NodeType = "control"
+	BGPRouter               NodeType = "bgpRouter"
+	BGPNeighbor             NodeType = "bgpNeighbor"
+	ConfigMap               NodeType = "configMap"
+	ConfigFile              NodeType = "configFile"
+	RoutingInstance         NodeType = "routingInstance"
+	VirtualMachineInterface NodeType = "virtualMachineInterface"
+	DeploymentResource      Shape    = "box"
+	ConfigResource          Shape    = "oval"
+	ConfigFileResource      Shape    = "hexagon"
+	ConfigPlane             Plane    = "configPlane"
+	ControlPlane            Plane    = "controlPlane"
+	DataPlane               Plane    = "dataPlane"
+	ControlCategory         Category = "controlCategory"
+	DataCategory            Category = "dataCategory"
+	DeploymentCategory      Category = "deploymentCategory"
 )
-
-var categorySymbolMap = map[Category]string{
-	ControlCategory:    "roundRect",
-	DataCategory:       "circle",
-	DeploymentCategory: "diamond",
-}
-
-var planeColorMap = map[Plane]*opts.ItemStyle{
-	ConfigPlane: {
-		Color: "violet",
-	},
-	ControlPlane: {
-		Color: "green",
-	},
-	DataPlane: {
-		Color: "blue",
-	},
-}
 
 var categoryColorMap = map[Category]*opts.ItemStyle{
 	ControlCategory: {
@@ -72,28 +56,16 @@ var planeSymbolMap = map[Plane]string{
 }
 
 var categoryMap = map[NodeType]Category{
-	Vrouter:       DeploymentCategory,
-	VirtualRouter: DataCategory,
-	Pod:           DeploymentCategory,
-	Control:       DeploymentCategory,
-	BGPRouter:     ControlCategory,
-	BGPNeighbor:   ControlCategory,
-	ConfigMap:     DeploymentCategory,
-	ConfigFile:    DeploymentCategory,
-}
-
-var planeMap = map[NodeType]Plane{
-	Vrouter:       ConfigPlane,
-	VirtualRouter: ConfigPlane,
-	Pod:           ConfigPlane,
-	Control:       ConfigPlane,
-	BGPRouter:     ConfigPlane,
-	BGPNeighbor:   ControlPlane,
-	ConfigMap:     ConfigPlane,
-	ConfigFile:    ConfigPlane,
-}
-
-type FilterOpts struct {
+	Vrouter:                 DeploymentCategory,
+	VirtualRouter:           DataCategory,
+	Pod:                     DeploymentCategory,
+	Control:                 DeploymentCategory,
+	BGPRouter:               ControlCategory,
+	BGPNeighbor:             ControlCategory,
+	RoutingInstance:         ControlCategory,
+	VirtualMachineInterface: DataCategory,
+	ConfigMap:               DeploymentCategory,
+	ConfigFile:              DeploymentCategory,
 }
 
 func Convert(source interface{}, destin interface{}) {
@@ -149,9 +121,9 @@ func (g *Graph) nextNodeID() int64 {
 	return nodeIDCounter
 }
 
-func (g *Graph) GetNodesByType(nodeType NodeType) (nodeInterfaceList []NodeInterface) {
+func (g *Graph) GetNodesByTypePlane(nodeType NodeType, plane Plane) (nodeInterfaceList []NodeInterface) {
 	for graphNode := range g.nodes {
-		if graphNode.Node.Type() == nodeType {
+		if graphNode.Node.Type() == nodeType && graphNode.Node.Plane() == plane {
 			nodeInterfaceList = append(nodeInterfaceList, graphNode.Node)
 		}
 	}
@@ -168,7 +140,7 @@ func NewGraph(clientConfig *clientset.Client) *Graph {
 func (g *Graph) EdgeMatcher() {
 	for graphNode := range g.nodes {
 		for _, nodeEdgeSelector := range graphNode.Node.GetEdgeSelectors() {
-			for _, dstNodeInterface := range g.GetNodesByType(nodeEdgeSelector.NodeType) {
+			for _, dstNodeInterface := range g.GetNodesByTypePlane(nodeEdgeSelector.NodeType, nodeEdgeSelector.Plane) {
 				for _, dstEdgeLabel := range dstNodeInterface.GetEdgeLabels() {
 					match := true
 					for _, matchValue := range nodeEdgeSelector.MatchValues {
@@ -223,6 +195,7 @@ type MatchValue struct {
 
 type EdgeSelector struct {
 	NodeType    NodeType
+	Plane       Plane
 	MatchValues []MatchValue
 }
 
@@ -233,6 +206,7 @@ type EdgeLabel struct {
 type NodeInterface interface {
 	Convert(NodeInterface) error
 	Type() NodeType
+	Plane() Plane
 	Name() string
 	GetEdgeSelectors() []EdgeSelector
 	GetEdgeLabels() []EdgeLabel
@@ -281,10 +255,7 @@ func (g *Graph) graphNodes() []opts.GraphNode {
 			Name:       fmt.Sprintf("%s:%s", k.Node.Type(), k.Node.Name()),
 			SymbolSize: 40,
 		}
-		graphNode.Symbol = categorySymbolMap[categoryMap[k.Node.Type()]]
-		graphNode.ItemStyle = planeColorMap[planeMap[k.Node.Type()]]
-
-		graphNode.Symbol = planeSymbolMap[planeMap[k.Node.Type()]]
+		graphNode.Symbol = planeSymbolMap[k.Node.Plane()]
 		graphNode.ItemStyle = categoryColorMap[categoryMap[k.Node.Type()]]
 		graphNodes = append(graphNodes, graphNode)
 	}

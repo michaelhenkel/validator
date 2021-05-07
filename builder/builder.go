@@ -4,20 +4,24 @@ import (
 	"github.com/go-echarts/go-echarts/v2/components"
 	"github.com/michaelhenkel/validator/graph"
 	"github.com/michaelhenkel/validator/k8s/clientset"
-	"github.com/michaelhenkel/validator/resources"
+	configresources "github.com/michaelhenkel/validator/resources/config"
+	controlresources "github.com/michaelhenkel/validator/resources/control"
 )
 
 func BuildGraph(clientConfig *clientset.Client) *graph.Graph {
 
 	g := graph.NewGraph(clientConfig)
-	virtualRouter := resources.VirtualRouterNode{}
-	bgpNeighbor := resources.BGPNeighborNode{}
-	bgpRouter := resources.BGPRouterNode{}
-	control := resources.ControlNode{}
-	configFile := resources.ConfigFileNode{}
-	configMap := resources.ConfigMapNode{}
-	pod := resources.PodNode{}
-	vRouter := resources.VrouterNode{}
+	virtualRouter := configresources.VirtualRouterNode{}
+	bgpNeighbor := controlresources.BGPNeighborNode{}
+	bgpRouter := configresources.BGPRouterNode{}
+	control := configresources.ControlNode{}
+	configFile := configresources.ConfigFileNode{}
+	configMap := configresources.ConfigMapNode{}
+	pod := configresources.PodNode{}
+	vRouter := configresources.VrouterNode{}
+	routingInstanceConfig := configresources.RoutingInstanceNode{}
+	routingInstanceControl := controlresources.RoutingInstanceNode{}
+	virtualMachineInterfaceConfig := configresources.VirtualMachineInterfaceNode{}
 
 	g.NodeAdder(virtualRouter.AdderFunc()).
 		NodeAdder(bgpNeighbor.AdderFunc()).
@@ -27,6 +31,9 @@ func BuildGraph(clientConfig *clientset.Client) *graph.Graph {
 		NodeAdder(configMap.AdderFunc()).
 		NodeAdder(pod.AdderFunc()).
 		NodeAdder(vRouter.AdderFunc()).
+		NodeAdder(routingInstanceConfig.AdderFunc()).
+		NodeAdder(virtualMachineInterfaceConfig.AdderFunc()).
+		NodeAdder(routingInstanceControl.AdderFunc()).
 		EdgeMatcher()
 	return g
 }
