@@ -5,12 +5,12 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "get vrouter",
+            "name": "print",
             "type": "go",
             "request": "launch",
             "mode": "auto",
             "program": "/Users/mhenkel/go/src/github.com/michaelhenkel/validator/main.go",
-            "args": ["print","-n","contrail"]
+            "args": ["print"]
         },
         {
             "name": "get pod",
@@ -19,6 +19,15 @@
             "mode": "auto",
             "program": "/Users/mhenkel/go/src/github.com/michaelhenkel/validator/main.go",
             "args": ["pod","pod1"]
+        }
+        ,
+        {
+            "name": "serve",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "/Users/mhenkel/go/src/github.com/michaelhenkel/validator/main.go",
+            "args": ["serve"]
         }
     ]
 }

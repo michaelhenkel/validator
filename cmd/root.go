@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"github.com/michaelhenkel/validator/k8s/clientset"
-	"github.com/michaelhenkel/validator/validate"
 	"github.com/spf13/cobra"
 )
 
@@ -11,10 +10,10 @@ var (
 		Use:   "validator",
 		Short: "validates contrail resources",
 	}
-	Namespace    string
-	Kubeconfig   string
-	Name         string
-	ClientConfig *validate.ClientConfig
+	Namespace  string
+	Kubeconfig string
+	Name       string
+	Client     *clientset.Client
 )
 
 func initConfig() {
@@ -25,10 +24,7 @@ func initConfig() {
 	if err != nil {
 		panic(err)
 	}
-	ClientConfig = &validate.ClientConfig{
-		Name:   Name,
-		Client: client,
-	}
+	Client = client
 }
 
 // Execute executes the root command.

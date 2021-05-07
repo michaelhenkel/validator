@@ -3,6 +3,8 @@ package clientset
 import (
 	"os"
 
+	introspectv1alpha1clientset "github.com/michaelhenkel/introspect/pkg/client/clientset"
+	introspectrest "github.com/michaelhenkel/introspect/pkg/rest"
 	"k8s.io/client-go/kubernetes"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/tools/clientcmd"
@@ -15,11 +17,12 @@ import (
 )
 
 type Client struct {
-	CoreV1            corev1client.CoreV1Interface
-	ContrailCoreV1    contrailcorev1alpha1client.CoreV1alpha1Interface
-	DeployerConfigV1  deployerconfigplanev1alpha1client.ConfigplaneV1alpha1Interface
-	DeployerControlV1 deployercontrolplanev1alpha1client.ControlplaneV1alpha1Interface
-	DeployerDataV1    deployerdataplanev1alpha1client.DataplaneV1alpha1Interface
+	CoreV1             corev1client.CoreV1Interface
+	ContrailCoreV1     contrailcorev1alpha1client.CoreV1alpha1Interface
+	DeployerConfigV1   deployerconfigplanev1alpha1client.ConfigplaneV1alpha1Interface
+	DeployerControlV1  deployercontrolplanev1alpha1client.ControlplaneV1alpha1Interface
+	DeployerDataV1     deployerdataplanev1alpha1client.DataplaneV1alpha1Interface
+	IntrospectClientV1 introspectv1alpha1clientset.Clientset
 }
 
 func NewClient(kubeconfigPath string) (*Client, error) {
@@ -45,13 +48,13 @@ func NewClient(kubeconfigPath string) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return &Client{
-		CoreV1:            k8sClientset.CoreV1(),
-		ContrailCoreV1:    contrailClientSet.CoreV1alpha1(),
-		DeployerConfigV1:  deployerClientSet.ConfigplaneV1alpha1(),
-		DeployerControlV1: deployerClientSet.ControlplaneV1alpha1(),
-		DeployerDataV1:    deployerClientSet.DataplaneV1alpha1(),
+		CoreV1:             k8sClientset.CoreV1(),
+		ContrailCoreV1:     contrailClientSet.CoreV1alpha1(),
+		DeployerConfigV1:   deployerClientSet.ConfigplaneV1alpha1(),
+		DeployerControlV1:  deployerClientSet.ControlplaneV1alpha1(),
+		DeployerDataV1:     deployerClientSet.DataplaneV1alpha1(),
+		IntrospectClientV1: introspectv1alpha1clientset.NewClientSet(introspectrest.NewRESTClient("http")),
 	}, nil
 
 }

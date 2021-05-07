@@ -22,7 +22,13 @@ replace k8s.io/api => k8s.io/api v0.20.2
 
 replace k8s.io/kubectl => k8s.io/kubectl v0.20.2
 
+replace github.com/michaelhenkel/introspect => ../introspect
+
 require (
+	github.com/ajstarks/svgo v0.0.0-20210406150507-75cfd577ce75 // indirect
+	github.com/go-echarts/go-echarts/v2 v2.2.4 // indirect
+	github.com/goccy/go-graphviz v0.0.9 // indirect
+	github.com/michaelhenkel/introspect v0.0.0-20210504231118-0f6686c24caa // indirect
 	github.com/spf13/cobra v1.1.3
 	gonum.org/v1/gonum v0.0.0-20190331200053-3d26580ed485
 	gopkg.in/ini.v1 v1.51.0

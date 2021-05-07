@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/michaelhenkel/validator/validate"
+	"github.com/michaelhenkel/validator/builder"
 	"github.com/spf13/cobra"
 )
 
@@ -20,9 +20,8 @@ var printCmd = &cobra.Command{
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		ClientConfig.Name = Name
-		validator := validate.NewValidator(ClientConfig)
-		validator.Validate()
-		validator.Print()
+		g := builder.BuildGraph(Client)
+		g.String()
+		g.EdgeMatcher2()
 	},
 }
