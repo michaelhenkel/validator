@@ -77,6 +77,16 @@ func (r *VirtualMachineInterfaceNode) Adder(g *graph.Graph) ([]graph.NodeInterfa
 			}
 			edgeSelectorList = append(edgeSelectorList, edgeSelector)
 		}
+		for _, virtualMachineReference := range resource.Spec.VirtualMachineReferences {
+			edgeSelector := graph.EdgeSelector{
+				NodeType: graph.VirtualMachine,
+				Plane:    graph.ConfigPlane,
+				MatchValues: []graph.MatchValue{{
+					Value: map[string]string{"VirtualMachineName": virtualMachineReference.Name},
+				}},
+			}
+			edgeSelectorList = append(edgeSelectorList, edgeSelector)
+		}
 		resourceNode := &VirtualMachineInterfaceNode{
 			Resource: resource,
 			EdgeLabels: []graph.EdgeLabel{{

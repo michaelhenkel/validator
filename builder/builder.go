@@ -18,10 +18,14 @@ func BuildGraph(clientConfig *clientset.Client) *graph.Graph {
 	configFile := configresources.ConfigFileNode{}
 	configMap := configresources.ConfigMapNode{}
 	pod := configresources.PodNode{}
+	k8snode := configresources.K8SNodeNode{}
 	vRouter := configresources.VrouterNode{}
 	routingInstanceConfig := configresources.RoutingInstanceNode{}
 	routingInstanceControl := controlresources.RoutingInstanceNode{}
+	kubemanager := configresources.KubemanagerNode{}
 	virtualMachineInterfaceConfig := configresources.VirtualMachineInterfaceNode{}
+	virtualMachineConfig := configresources.VirtualMachineNode{}
+	virtualNetworkConfig := configresources.VirtualNetworkNode{}
 
 	g.NodeAdder(virtualRouter.AdderFunc()).
 		NodeAdder(bgpNeighbor.AdderFunc()).
@@ -30,10 +34,14 @@ func BuildGraph(clientConfig *clientset.Client) *graph.Graph {
 		NodeAdder(configFile.AdderFunc()).
 		NodeAdder(configMap.AdderFunc()).
 		NodeAdder(pod.AdderFunc()).
+		NodeAdder(k8snode.AdderFunc()).
 		NodeAdder(vRouter.AdderFunc()).
 		NodeAdder(routingInstanceConfig.AdderFunc()).
 		NodeAdder(virtualMachineInterfaceConfig.AdderFunc()).
+		NodeAdder(virtualMachineConfig.AdderFunc()).
+		NodeAdder(virtualNetworkConfig.AdderFunc()).
 		NodeAdder(routingInstanceControl.AdderFunc()).
+		NodeAdder(kubemanager.AdderFunc()).
 		EdgeMatcher()
 	return g
 }

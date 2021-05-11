@@ -3,6 +3,7 @@ package resources
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/michaelhenkel/validator/graph"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -77,15 +78,30 @@ func (r *BGPNeighborNode) Adder(g *graph.Graph) ([]graph.NodeInterface, error) {
 			}
 			for _, resource := range bgpNeighborList.Neighbors.List.BgpNeighborResp {
 				r.Resource = resource
-				resourceNode := &BGPNeighborNode{
-					Resource: resource,
-					EdgeSelectors: []graph.EdgeSelector{{
-						NodeType: graph.VirtualRouter,
-						Plane:    graph.ConfigPlane,
-						MatchValues: []graph.MatchValue{{
-							Value: map[string]string{"VirtualRouterIP": resource.PeerAddress.Text},
-						}},
+				var edgeSelectorList []graph.EdgeSelector
+				edgeSelector := graph.EdgeSelector{
+					NodeType: graph.VirtualRouter,
+					Plane:    graph.ConfigPlane,
+					MatchValues: []graph.MatchValue{{
+						Value: map[string]string{"VirtualRouterIP": resource.PeerAddress.Text},
 					}},
+				}
+				edgeSelectorList = append(edgeSelectorList, edgeSelector)
+
+				for _, bgpNeighborRoutingInstance := range resource.RoutingInstances.List.BgpNeighborRoutingInstance {
+					routingInstanceList := strings.Split(bgpNeighborRoutingInstance.Name.Text, ":")
+					edgeSelector := graph.EdgeSelector{
+						NodeType: graph.RoutingInstance,
+						Plane:    graph.ControlPlane,
+						MatchValues: []graph.MatchValue{{
+							Value: map[string]string{"RoutingInstanceName": fmt.Sprintf("%s:%s", routingInstanceList[1], routingInstanceList[3])},
+						}},
+					}
+					edgeSelectorList = append(edgeSelectorList, edgeSelector)
+				}
+				resourceNode := &BGPNeighborNode{
+					Resource:      resource,
+					EdgeSelectors: edgeSelectorList,
 					EdgeLabels: []graph.EdgeLabel{{
 						Value: map[string]string{"BGPRouterNeighborLocalIP": resource.LocalAddress.Text},
 					}},

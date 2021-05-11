@@ -2,7 +2,9 @@ package resources
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/michaelhenkel/validator/graph"
 
@@ -49,6 +51,11 @@ func (r *PodNode) GetEdgeSelectors() []graph.EdgeSelector {
 	return r.EdgeSelectors
 }
 
+type virtualNetworkAnnotation struct {
+	Name      string `json:"name"`
+	Namespace string `json:"namespace"`
+}
+
 func (r *PodNode) Adder(g *graph.Graph) ([]graph.NodeInterface, error) {
 	var nodeInterfaceList []graph.NodeInterface
 	vrouterList, err := g.ClientConfig.DeployerDataV1.Vrouters("").List(context.Background(), metav1.ListOptions{})
@@ -72,6 +79,74 @@ func (r *PodNode) Adder(g *graph.Graph) ([]graph.NodeInterface, error) {
 			return nil, err
 		}
 		nodeInterfaceList = append(nodeInterfaceList, controlList...)
+	}
+
+	overlayPodList, err := g.ClientConfig.CoreV1.Pods("").List(context.Background(), metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+	for _, resource := range overlayPodList.Items {
+		if !resource.Spec.HostNetwork {
+			var edgeSelectorList []graph.EdgeSelector
+			kubemanagerList, err := g.ClientConfig.DeployerConfigV1.Kubemanagers("").List(context.Background(), metav1.ListOptions{})
+			if err != nil {
+				fmt.Println(err)
+			}
+			for _, kubemanager := range kubemanagerList.Items {
+				defaultPodNetworkNamespaceName := fmt.Sprintf("%s/%s-default-podnetwork", kubemanager.Spec.Namespace, kubemanager.Spec.ClusterName)
+				virtualNetworkEdgeSelector := graph.EdgeSelector{
+					NodeType: graph.VirtualNetwork,
+					Plane:    graph.ConfigPlane,
+					MatchValues: []graph.MatchValue{{
+						Value: map[string]string{"VirtualNetworkNamespaceName": defaultPodNetworkNamespaceName},
+					}},
+				}
+				edgeSelectorList = append(edgeSelectorList, virtualNetworkEdgeSelector)
+			}
+
+			virtualMachineEdgeSelector := graph.EdgeSelector{
+				NodeType: graph.VirtualMachine,
+				Plane:    graph.ConfigPlane,
+				MatchValues: []graph.MatchValue{{
+					Value: map[string]string{"PodNamespaceName": fmt.Sprintf("%s/%s", resource.Namespace, resource.Name)},
+				}},
+			}
+			edgeSelectorList = append(edgeSelectorList, virtualMachineEdgeSelector)
+			if networkAnnotation, ok := resource.Annotations["k8s.v1.cni.cncf.io/networks"]; ok {
+				networkAnnotationsList := strings.Split(networkAnnotation, "/")
+				var networkNamespaceName string
+				if len(networkAnnotationsList) == 2 {
+					networkNamespaceName = networkAnnotation
+				} else {
+					vnAnnotation := &virtualNetworkAnnotation{}
+					if err := json.Unmarshal([]byte(networkAnnotation), vnAnnotation); err != nil {
+						fmt.Println(err)
+					}
+					networkNamespaceName = fmt.Sprintf("%s/%s", vnAnnotation.Namespace, vnAnnotation.Name)
+				}
+				virtualNetworkEdgeSelector := graph.EdgeSelector{
+					NodeType: graph.VirtualNetwork,
+					Plane:    graph.ConfigPlane,
+					MatchValues: []graph.MatchValue{{
+						Value: map[string]string{"VirtualNetworkNamespaceName": networkNamespaceName},
+					}},
+				}
+				edgeSelectorList = append(edgeSelectorList, virtualNetworkEdgeSelector)
+			}
+			nodeEdgeSelector := graph.EdgeSelector{
+				NodeType: graph.K8SNode,
+				Plane:    graph.ConfigPlane,
+				MatchValues: []graph.MatchValue{{
+					Value: map[string]string{"NodeIP": resource.Status.HostIP},
+				}},
+			}
+			edgeSelectorList = append(edgeSelectorList, nodeEdgeSelector)
+			resourceNode := &PodNode{
+				Resource:      resource,
+				EdgeSelectors: edgeSelectorList,
+			}
+			nodeInterfaceList = append(nodeInterfaceList, resourceNode)
+		}
 	}
 	return nodeInterfaceList, nil
 }
@@ -120,6 +195,15 @@ func (r *PodNode) buildNodeList(filter string, g *graph.Graph, nodeType graph.No
 			}},
 		}
 		edgeSelectorList = append(edgeSelectorList, edgeSelector)
+
+		nodeEdgeSelector := graph.EdgeSelector{
+			NodeType: graph.K8SNode,
+			Plane:    graph.ConfigPlane,
+			MatchValues: []graph.MatchValue{{
+				Value: map[string]string{"NodeIP": resource.Status.HostIP},
+			}},
+		}
+		edgeSelectorList = append(edgeSelectorList, nodeEdgeSelector)
 
 		r.Resource = resource
 		resourceNode := &PodNode{

@@ -12,7 +12,6 @@ var (
 	}
 	Namespace  string
 	Kubeconfig string
-	Name       string
 	Client     *clientset.Client
 )
 
@@ -35,6 +34,5 @@ func Execute() error {
 func init() {
 	cobra.OnInitialize(initConfig)
 
-	rootCmd.PersistentFlags().StringVarP(&Namespace, "namespace", "n", "", "resource namespace")
 	rootCmd.PersistentFlags().StringVarP(&Kubeconfig, "kubeconfig", "k", "", "path to kubeconfig")
 }

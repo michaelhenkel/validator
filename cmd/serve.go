@@ -16,12 +16,6 @@ var serveCmd = &cobra.Command{
 	Use:   "serve",
 	Short: "serves the graph",
 	Long:  ``,
-	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) > 0 {
-			Name = args[0]
-		}
-		return nil
-	},
 	Run: func(cmd *cobra.Command, args []string) {
 		serve()
 

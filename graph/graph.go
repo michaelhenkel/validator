@@ -26,6 +26,10 @@ const (
 	ConfigFile              NodeType = "configFile"
 	RoutingInstance         NodeType = "routingInstance"
 	VirtualMachineInterface NodeType = "virtualMachineInterface"
+	VirtualMachine          NodeType = "virtualMachine"
+	VirtualNetwork          NodeType = "virtualNetwork"
+	Kubemanager             NodeType = "kubemanager"
+	K8SNode                 NodeType = "k8snode"
 	DeploymentResource      Shape    = "box"
 	ConfigResource          Shape    = "oval"
 	ConfigFileResource      Shape    = "hexagon"
@@ -60,10 +64,13 @@ var categoryMap = map[NodeType]Category{
 	VirtualRouter:           DataCategory,
 	Pod:                     DeploymentCategory,
 	Control:                 DeploymentCategory,
+	Kubemanager:             DeploymentCategory,
 	BGPRouter:               ControlCategory,
 	BGPNeighbor:             ControlCategory,
 	RoutingInstance:         ControlCategory,
+	VirtualNetwork:          ControlCategory,
 	VirtualMachineInterface: DataCategory,
+	VirtualMachine:          DataCategory,
 	ConfigMap:               DeploymentCategory,
 	ConfigFile:              DeploymentCategory,
 }
@@ -87,9 +94,9 @@ type GraphNode struct {
 }
 
 type Graph struct {
-	nodes        map[GraphNode][]edge
+	nodes        map[GraphNode]struct{}
 	ClientConfig *clientset.Client
-	edges        []opts.GraphLink
+	NodeEdges    map[NodeInterface][]NodeInterface
 }
 
 func (gn *GraphNode) setID(id int64) {
@@ -130,14 +137,24 @@ func (g *Graph) GetNodesByTypePlane(nodeType NodeType, plane Plane) (nodeInterfa
 	return nodeInterfaceList
 }
 
+func (g *Graph) GetNodeByTypePlaneName(nodeType NodeType, plane Plane, name string) (nodeInterface NodeInterface) {
+	for graphNode := range g.nodes {
+		if graphNode.Node.Type() == nodeType && graphNode.Node.Plane() == plane && graphNode.Node.Name() == name {
+			return graphNode.Node
+		}
+	}
+	return nodeInterface
+}
+
 func NewGraph(clientConfig *clientset.Client) *Graph {
 	return &Graph{
-		nodes:        make(map[GraphNode][]edge),
+		nodes:        make(map[GraphNode]struct{}),
 		ClientConfig: clientConfig,
 	}
 }
 
 func (g *Graph) EdgeMatcher() {
+	g.NodeEdges = make(map[NodeInterface][]NodeInterface)
 	for graphNode := range g.nodes {
 		for _, nodeEdgeSelector := range graphNode.Node.GetEdgeSelectors() {
 			for _, dstNodeInterface := range g.GetNodesByTypePlane(nodeEdgeSelector.NodeType, nodeEdgeSelector.Plane) {
@@ -155,14 +172,9 @@ func (g *Graph) EdgeMatcher() {
 					}
 					if match {
 						fmt.Printf("Found edge from %s:%s to %s:%s\n", graphNode.Node.Type(), graphNode.Node.Name(), dstNodeInterface.Type(), dstNodeInterface.Name())
-						edge := opts.GraphLink{
-							Source: fmt.Sprintf("%s:%s", graphNode.Node.Type(), graphNode.Node.Name()),
-							Target: fmt.Sprintf("%s:%s", dstNodeInterface.Type(), dstNodeInterface.Name()),
-							Value:  10,
-						}
-						g.edges = append(g.edges, edge)
+						g.NodeEdges[graphNode.Node] = append(g.NodeEdges[graphNode.Node], dstNodeInterface)
+						g.NodeEdges[dstNodeInterface] = append(g.NodeEdges[dstNodeInterface], graphNode.Node)
 					}
-
 				}
 			}
 		}
@@ -179,10 +191,10 @@ func (g *Graph) NodeAdder(adder func(g *Graph) ([]NodeInterface, error)) *Graph 
 		numNodes := len(g.nodes)
 		if numNodes == 0 {
 			graphNode.setID(0)
-			g.nodes[graphNode] = []edge{}
+			g.nodes[graphNode] = struct{}{}
 		} else {
 			graphNode.setID(g.nextNodeID())
-			g.nodes[graphNode] = []edge{}
+			g.nodes[graphNode] = struct{}{}
 		}
 	}
 	return g
@@ -218,11 +230,6 @@ func (g *Graph) String() {
 	}
 }
 
-type edge struct {
-	node  GraphNode
-	label string
-}
-
 type Node interface {
 	GetID() int64
 	SetID(int64)
@@ -231,21 +238,38 @@ type Node interface {
 	Shape() Shape
 }
 
+type Edge struct {
+	Source NodeInterface
+	Target NodeInterface
+}
+
 type NewNode struct {
 	NodeType NodeType
 	Resource interface{}
 }
 
-func (g *Graph) AddEdge(from, to GraphNode, label string) {
-	g.nodes[from] = append(g.nodes[from], edge{node: to, label: label})
+type NodeFilterOption struct {
+	NodeType    NodeType
+	NodeName    string
+	NodePlane   Plane
+	MapSetter   func(string)
+	MapGetter   func() string
+	KeyValueMap func(NodeType, string)
 }
 
-func (g *Graph) GetEdges(graphNode GraphNode) []edge {
-	return g.nodes[graphNode]
-}
+func (g *Graph) GetNodeEdge(node NodeInterface, filterOpts NodeFilterOption) []NodeInterface {
+	var nodeEdgeList []NodeInterface
+	if sourceNode, ok := g.NodeEdges[node]; ok {
+		for _, targetNode := range sourceNode {
+			if targetNode.Plane() == filterOpts.NodePlane &&
+				targetNode.Type() == filterOpts.NodeType {
+				nodeEdgeList = append(nodeEdgeList, targetNode)
+			}
 
-func (e *edge) String() string {
-	return fmt.Sprintf("%v", e.node.getID())
+		}
+
+	}
+	return nodeEdgeList
 }
 
 func (g *Graph) graphNodes() []opts.GraphNode {
@@ -257,28 +281,70 @@ func (g *Graph) graphNodes() []opts.GraphNode {
 		}
 		graphNode.Symbol = planeSymbolMap[k.Node.Plane()]
 		graphNode.ItemStyle = categoryColorMap[categoryMap[k.Node.Type()]]
+		//graphNode.Category = 0
 		graphNodes = append(graphNodes, graphNode)
 	}
 	return graphNodes
 }
 
+type GraphWalker struct {
+	SourceNodes []NodeInterface
+	G           *Graph
+	KeyValueMap map[NodeType]string
+}
+
+type NodeTypePlane struct {
+	NodeType  NodeType
+	NodePlane Plane
+	NodeName  string
+}
+
+func (gw *GraphWalker) Walk(filterOpts NodeFilterOption) *GraphWalker {
+	var nodeInterfaceList []NodeInterface
+	for _, sourceNode := range gw.SourceNodes {
+		if filterOpts.KeyValueMap != nil {
+			filterOpts.KeyValueMap(sourceNode.Type(), sourceNode.Name())
+		}
+		if filterOpts.MapGetter != nil {
+			value := filterOpts.MapGetter()
+			fmt.Println("Value", value)
+		}
+		fmt.Printf("source %s:%s:%s\n", sourceNode.Plane(), sourceNode.Type(), sourceNode.Name())
+		nodeInterfaceList = append(nodeInterfaceList, gw.G.GetNodeEdge(sourceNode, filterOpts)...)
+		for _, node := range gw.G.GetNodeEdge(sourceNode, filterOpts) {
+			fmt.Printf("--> %s:%s:%s\n", node.Plane(), node.Type(), node.Name())
+		}
+	}
+	gw.SourceNodes = nodeInterfaceList
+	return gw
+}
+
 func (g *Graph) graphBase() *charts.Graph {
 	cgraph := charts.NewGraph()
+
 	cgraph.Initialization.Width = "100%"
 	cgraph.Initialization.Height = "2000px"
+	cgraph.TextStyle = &opts.TextStyle{
+		FontSize: 120,
+	}
+	cgraph.SubtitleStyle = &opts.TextStyle{
+		FontSize: 120,
+	}
 	cgraph.SetGlobalOptions(
 		charts.WithTitleOpts(opts.Title{Title: "contrail graph"}),
-		/*
-			charts.WithDataZoomOpts(
-				opts.DataZoom{
-					Type:  "slider",
-					Start: 50,
-					End:   100,
-				},
-			),
-		*/
 	)
-	cgraph.AddSeries("graph", g.graphNodes(), g.edges,
+	var edges []opts.GraphLink
+	for sourceNode, targetNodes := range g.NodeEdges {
+		for _, targetNode := range targetNodes {
+			edge := opts.GraphLink{
+				Source: fmt.Sprintf("%s:%s", sourceNode.Type(), sourceNode.Name()),
+				Target: fmt.Sprintf("%s:%s", targetNode.Type(), targetNode.Name()),
+				Value:  10,
+			}
+			edges = append(edges, edge)
+		}
+	}
+	cgraph.AddSeries("graph", g.graphNodes(), edges,
 		charts.WithGraphChartOpts(
 			opts.GraphChart{
 				FocusNodeAdjacency: true,
@@ -287,6 +353,17 @@ func (g *Graph) graphBase() *charts.Graph {
 					Repulsion:  1000,
 					EdgeLength: 60,
 				},
+				/*
+					Categories: []*opts.GraphCategory{{
+						Name: "cat1",
+						Label: &opts.Label{
+							Show:      true,
+							Color:     "red",
+							Position:  "top",
+							Formatter: "",
+						},
+					}},
+				*/
 			},
 		),
 	)

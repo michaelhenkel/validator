@@ -56,18 +56,31 @@ func (r *RoutingInstanceNode) Adder(g *graph.Graph) ([]graph.NodeInterface, erro
 	}
 	for _, resource := range resourceList.Items {
 		r.Resource = resource
+		var edgeSelectorList []graph.EdgeSelector
+		if resource.Spec.Parent.Kind == "VirtualNetwork" {
+			edgeSelector := graph.EdgeSelector{
+				NodeType: graph.VirtualNetwork,
+				Plane:    graph.ConfigPlane,
+				MatchValues: []graph.MatchValue{{
+					Value: map[string]string{"VirtualNetworkNamespaceName": fmt.Sprintf("%s/%s", resource.Spec.Parent.Namespace, resource.Spec.Parent.Name)},
+				}},
+			}
+			edgeSelectorList = append(edgeSelectorList, edgeSelector)
+		}
+		edgeSelector := graph.EdgeSelector{
+			NodeType: graph.RoutingInstance,
+			Plane:    graph.ControlPlane,
+			MatchValues: []graph.MatchValue{{
+				Value: map[string]string{"RoutingInstanceName": fmt.Sprintf("%s:%s", resource.Namespace, resource.Name)},
+			}},
+		}
+		edgeSelectorList = append(edgeSelectorList, edgeSelector)
 		resourceNode := &RoutingInstanceNode{
 			Resource: resource,
 			EdgeLabels: []graph.EdgeLabel{{
 				Value: map[string]string{"RoutingInstanceName": resource.Name},
 			}},
-			EdgeSelectors: []graph.EdgeSelector{{
-				NodeType: graph.RoutingInstance,
-				Plane:    graph.ControlPlane,
-				MatchValues: []graph.MatchValue{{
-					Value: map[string]string{"RoutingInstanceName": fmt.Sprintf("%s:%s", resource.Namespace, resource.Name)},
-				}},
-			}},
+			EdgeSelectors: edgeSelectorList,
 		}
 		graphNodeList = append(graphNodeList, resourceNode)
 	}

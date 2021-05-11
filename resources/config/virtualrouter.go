@@ -57,6 +57,17 @@ func (r *VirtualRouterNode) Adder(g *graph.Graph) ([]graph.NodeInterface, error)
 	}
 	for _, virtualRouter := range virtualRouterList.Items {
 		r.Resource = virtualRouter
+		var edgeSelectorList []graph.EdgeSelector
+		for _, virtualMachineRefernce := range virtualRouter.Spec.VirtualMachineReferences {
+			edgeSelector := graph.EdgeSelector{
+				NodeType: graph.VirtualMachine,
+				Plane:    graph.ConfigPlane,
+				MatchValues: []graph.MatchValue{{
+					Value: map[string]string{"VirtualMachineName": virtualMachineRefernce.Name},
+				}},
+			}
+			edgeSelectorList = append(edgeSelectorList, edgeSelector)
+		}
 		virtualRouterNode := &VirtualRouterNode{
 			Resource: virtualRouter,
 			EdgeLabels: []graph.EdgeLabel{{
@@ -64,6 +75,7 @@ func (r *VirtualRouterNode) Adder(g *graph.Graph) ([]graph.NodeInterface, error)
 			}, {
 				Value: map[string]string{"VirtualRouterName": virtualRouter.Name},
 			}},
+			EdgeSelectors: edgeSelectorList,
 		}
 		graphNodeList = append(graphNodeList, virtualRouterNode)
 	}

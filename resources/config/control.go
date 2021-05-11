@@ -76,28 +76,3 @@ func (r *ControlNode) Adder(g *graph.Graph) ([]graph.NodeInterface, error) {
 	}
 	return graphNodeList, nil
 }
-
-/*
-
-func addControlToPodEdges(validator *Validator) error {
-	nodeList := validator.graph.GetNodesByNodeType(graph.Control)
-	podNodeList := validator.graph.GetNodesByNodeType(graph.Pod)
-	for _, nodeInterface := range nodeList {
-		node, ok := nodeInterface.(*ControlNode)
-		if !ok {
-			return fmt.Errorf("not a vrouter node")
-		}
-		for _, podNodeInterface := range podNodeList {
-			podNode, ok := podNodeInterface.(*PodNode)
-			if !ok {
-				return fmt.Errorf("not a pod node")
-			}
-			if appName, ok := podNode.Pod.Labels["app"]; ok && appName == node.Control.Name {
-				validator.graph.AddEdge(node, podNode, "")
-			}
-
-		}
-	}
-	return nil
-}
-*/
