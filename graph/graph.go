@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/go-echarts/go-echarts/v2/charts"
-	"github.com/go-echarts/go-echarts/v2/components"
 	"github.com/go-echarts/go-echarts/v2/opts"
 	"github.com/michaelhenkel/validator/k8s/clientset"
 )
@@ -30,6 +28,7 @@ const (
 	VirtualNetwork          NodeType = "virtualNetwork"
 	Kubemanager             NodeType = "kubemanager"
 	K8SNode                 NodeType = "k8snode"
+	ErrNode                 NodeType = "errorNode"
 	DeploymentResource      Shape    = "box"
 	ConfigResource          Shape    = "oval"
 	ConfigFileResource      Shape    = "hexagon"
@@ -39,9 +38,10 @@ const (
 	ControlCategory         Category = "controlCategory"
 	DataCategory            Category = "dataCategory"
 	DeploymentCategory      Category = "deploymentCategory"
+	ErrorCategory           Category = "errorCategory"
 )
 
-var categoryColorMap = map[Category]*opts.ItemStyle{
+var CategoryColorMap = map[Category]*opts.ItemStyle{
 	ControlCategory: {
 		Color: "violet",
 	},
@@ -51,15 +51,18 @@ var categoryColorMap = map[Category]*opts.ItemStyle{
 	DeploymentCategory: {
 		Color: "blue",
 	},
+	ErrorCategory: {
+		Color: "red",
+	},
 }
 
-var planeSymbolMap = map[Plane]string{
+var PlaneSymbolMap = map[Plane]string{
 	ConfigPlane:  "roundRect",
 	ControlPlane: "circle",
 	DataPlane:    "diamond",
 }
 
-var categoryMap = map[NodeType]Category{
+var CategoryMap = map[NodeType]Category{
 	Vrouter:                 DeploymentCategory,
 	VirtualRouter:           DataCategory,
 	Pod:                     DeploymentCategory,
@@ -73,6 +76,7 @@ var categoryMap = map[NodeType]Category{
 	VirtualMachine:          DataCategory,
 	ConfigMap:               DeploymentCategory,
 	ConfigFile:              DeploymentCategory,
+	ErrNode:                 ErrorCategory,
 }
 
 func Convert(source interface{}, destin interface{}) {
@@ -249,12 +253,11 @@ type NewNode struct {
 }
 
 type NodeFilterOption struct {
-	NodeType    NodeType
-	NodeName    string
-	NodePlane   Plane
-	MapSetter   func(string)
-	MapGetter   func() string
-	KeyValueMap func(NodeType, string)
+	NodeType     NodeType
+	NodeName     string
+	NodePlane    Plane
+	TargetFilter NodeType
+	ErrorMsg     string
 }
 
 func (g *Graph) GetNodeEdge(node NodeInterface, filterOpts NodeFilterOption) []NodeInterface {
@@ -272,25 +275,11 @@ func (g *Graph) GetNodeEdge(node NodeInterface, filterOpts NodeFilterOption) []N
 	return nodeEdgeList
 }
 
-func (g *Graph) graphNodes() []opts.GraphNode {
-	var graphNodes []opts.GraphNode
-	for k := range g.nodes {
-		graphNode := opts.GraphNode{
-			Name:       fmt.Sprintf("%s:%s", k.Node.Type(), k.Node.Name()),
-			SymbolSize: 40,
-		}
-		graphNode.Symbol = planeSymbolMap[k.Node.Plane()]
-		graphNode.ItemStyle = categoryColorMap[categoryMap[k.Node.Type()]]
-		//graphNode.Category = 0
-		graphNodes = append(graphNodes, graphNode)
-	}
-	return graphNodes
-}
-
 type GraphWalker struct {
 	SourceNodes []NodeInterface
 	G           *Graph
-	KeyValueMap map[NodeType]string
+	Tracker     map[NodeInterface]struct{}
+	Result      map[NodeInterface][]NodeInterface
 }
 
 type NodeTypePlane struct {
@@ -299,81 +288,85 @@ type NodeTypePlane struct {
 	NodeName  string
 }
 
+type ErrorNode struct {
+	name       string
+	ErrorPlane Plane
+}
+
+func (e *ErrorNode) Convert(node NodeInterface) error {
+	return nil
+}
+
+func (e *ErrorNode) Type() NodeType {
+	return ErrNode
+}
+
+func (e *ErrorNode) Plane() Plane {
+	return e.ErrorPlane
+}
+
+func (e *ErrorNode) Name() string {
+	return e.name
+}
+
+func (e *ErrorNode) GetEdgeSelectors() []EdgeSelector {
+	return []EdgeSelector{}
+}
+
+func (e *ErrorNode) GetEdgeLabels() []EdgeLabel {
+	return []EdgeLabel{}
+}
+
+/*
+	Convert(NodeInterface) error
+	Type() NodeType
+	Plane() Plane
+	Name() string
+	GetEdgeSelectors() []EdgeSelector
+	GetEdgeLabels() []EdgeLabel
+*/
+
 func (gw *GraphWalker) Walk(filterOpts NodeFilterOption) *GraphWalker {
 	var nodeInterfaceList []NodeInterface
+	if gw.Tracker == nil {
+		gw.Tracker = make(map[NodeInterface]struct{})
+	}
+	if gw.Result == nil {
+		gw.Result = make(map[NodeInterface][]NodeInterface)
+	}
 	for _, sourceNode := range gw.SourceNodes {
-		if filterOpts.KeyValueMap != nil {
-			filterOpts.KeyValueMap(sourceNode.Type(), sourceNode.Name())
-		}
-		if filterOpts.MapGetter != nil {
-			value := filterOpts.MapGetter()
-			fmt.Println("Value", value)
-		}
 		fmt.Printf("source %s:%s:%s\n", sourceNode.Plane(), sourceNode.Type(), sourceNode.Name())
+		gw.Tracker[sourceNode] = struct{}{}
 		nodeInterfaceList = append(nodeInterfaceList, gw.G.GetNodeEdge(sourceNode, filterOpts)...)
-		for _, node := range gw.G.GetNodeEdge(sourceNode, filterOpts) {
-			fmt.Printf("--> %s:%s:%s\n", node.Plane(), node.Type(), node.Name())
+		targetNodes := gw.G.GetNodeEdge(sourceNode, filterOpts)
+		if len(targetNodes) == 0 && filterOpts.ErrorMsg != "" {
+			errNode := &ErrorNode{
+				name:       fmt.Sprintf("%s\n%s", filterOpts.ErrorMsg, sourceNode.Name()),
+				ErrorPlane: sourceNode.Plane(),
+			}
+			if _, ok := gw.Result[errNode]; ok {
+				gw.Result[errNode] = append(gw.Result[errNode], sourceNode)
+			} else {
+				gw.Result[errNode] = []NodeInterface{sourceNode}
+			}
+			gw.Result[sourceNode] = append(gw.Result[sourceNode], errNode)
+			fmt.Printf("--> %s:%s:%s\n", errNode.Plane(), errNode.Type(), errNode.Name())
+		} else {
+			for _, node := range targetNodes {
+				if filterOpts.TargetFilter != "" {
+					for targetNode := range gw.Tracker {
+						if targetNode.Type() == filterOpts.TargetFilter && targetNode.Name() == node.Name() {
+							fmt.Printf("--> %s:%s:%s\n", node.Plane(), node.Type(), node.Name())
+							gw.Result[sourceNode] = append(gw.Result[sourceNode], targetNode)
+						}
+					}
+				} else {
+					fmt.Printf("--> %s:%s:%s\n", node.Plane(), node.Type(), node.Name())
+					gw.Result[sourceNode] = append(gw.Result[sourceNode], node)
+				}
+			}
 		}
 	}
 	gw.SourceNodes = nodeInterfaceList
 	return gw
-}
-
-func (g *Graph) graphBase() *charts.Graph {
-	cgraph := charts.NewGraph()
-
-	cgraph.Initialization.Width = "100%"
-	cgraph.Initialization.Height = "2000px"
-	cgraph.TextStyle = &opts.TextStyle{
-		FontSize: 120,
-	}
-	cgraph.SubtitleStyle = &opts.TextStyle{
-		FontSize: 120,
-	}
-	cgraph.SetGlobalOptions(
-		charts.WithTitleOpts(opts.Title{Title: "contrail graph"}),
-	)
-	var edges []opts.GraphLink
-	for sourceNode, targetNodes := range g.NodeEdges {
-		for _, targetNode := range targetNodes {
-			edge := opts.GraphLink{
-				Source: fmt.Sprintf("%s:%s", sourceNode.Type(), sourceNode.Name()),
-				Target: fmt.Sprintf("%s:%s", targetNode.Type(), targetNode.Name()),
-				Value:  10,
-			}
-			edges = append(edges, edge)
-		}
-	}
-	cgraph.AddSeries("graph", g.graphNodes(), edges,
-		charts.WithGraphChartOpts(
-			opts.GraphChart{
-				FocusNodeAdjacency: true,
-				Roam:               true,
-				Force: &opts.GraphForce{
-					Repulsion:  1000,
-					EdgeLength: 60,
-				},
-				/*
-					Categories: []*opts.GraphCategory{{
-						Name: "cat1",
-						Label: &opts.Label{
-							Show:      true,
-							Color:     "red",
-							Position:  "top",
-							Formatter: "",
-						},
-					}},
-				*/
-			},
-		),
-	)
-	return cgraph
-}
-
-func (g *Graph) RenderPage() *components.Page {
-	page := components.NewPage()
-	page.SetLayout(components.PageNoneLayout)
-	return page.AddCharts(
-		g.graphBase(),
-	)
 }

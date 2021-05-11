@@ -4,6 +4,7 @@ import (
 	"github.com/go-echarts/go-echarts/v2/components"
 	"github.com/michaelhenkel/validator/graph"
 	"github.com/michaelhenkel/validator/k8s/clientset"
+	"github.com/michaelhenkel/validator/render"
 	configresources "github.com/michaelhenkel/validator/resources/config"
 	controlresources "github.com/michaelhenkel/validator/resources/control"
 )
@@ -46,6 +47,6 @@ func BuildGraph(clientConfig *clientset.Client) *graph.Graph {
 	return g
 }
 
-func RenderPage(g *graph.Graph) *components.Page {
-	return g.RenderPage()
+func RenderPage(nodeEdges map[graph.NodeInterface][]graph.NodeInterface) *components.Page {
+	return render.RenderPage(nodeEdges)
 }

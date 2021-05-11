@@ -20,12 +20,6 @@ func init() {
 	printCmd.PersistentFlags().StringVarP(&Plane, "plane", "p", "", "resource plane")
 }
 
-type myfunc func(string, string)
-
-func test(key string, val string) {
-
-}
-
 var printCmd = &cobra.Command{
 	Use:   "print",
 	Short: "prints a graph",
@@ -48,15 +42,9 @@ var printCmd = &cobra.Command{
 			graphWalker.Walk(graph.NodeFilterOption{
 				NodeType:  graph.VirtualMachine,
 				NodePlane: graph.ConfigPlane,
-				KeyValueMap: func(nodeType graph.NodeType, name string) {
-					graphWalker.KeyValueMap = map[graph.NodeType]string{nodeType: name}
-				},
 			}).Walk(graph.NodeFilterOption{
 				NodeType:  graph.VirtualMachineInterface,
 				NodePlane: graph.ConfigPlane,
-				KeyValueMap: func(nodeType graph.NodeType, name string) {
-					graphWalker.KeyValueMap = map[graph.NodeType]string{nodeType: name}
-				},
 			}).Walk(graph.NodeFilterOption{
 				NodeType:  graph.RoutingInstance,
 				NodePlane: graph.ConfigPlane,
@@ -70,11 +58,9 @@ var printCmd = &cobra.Command{
 				NodeType:  graph.VirtualRouter,
 				NodePlane: graph.ConfigPlane,
 			}).Walk(graph.NodeFilterOption{
-				NodeType:  graph.VirtualMachine,
-				NodePlane: graph.ConfigPlane,
-				MapGetter: func() string {
-					return graphWalker.KeyValueMap[graph.VirtualMachine]
-				},
+				NodeType:     graph.VirtualMachine,
+				NodePlane:    graph.ConfigPlane,
+				TargetFilter: graph.VirtualMachine,
 			})
 		}
 	},
