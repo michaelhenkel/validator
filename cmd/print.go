@@ -3,6 +3,7 @@ package cmd
 import (
 	"github.com/michaelhenkel/validator/builder"
 	"github.com/michaelhenkel/validator/graph"
+	"github.com/michaelhenkel/validator/walker"
 	"github.com/spf13/cobra"
 )
 
@@ -35,7 +36,7 @@ var printCmd = &cobra.Command{
 			nodeInterface := g.GetNodeByTypePlaneName(nodeType, plane, Name)
 			var sourceNodeInterfaceList []graph.NodeInterface
 			sourceNodeInterfaceList = append(sourceNodeInterfaceList, nodeInterface)
-			graphWalker := graph.GraphWalker{
+			graphWalker := walker.GraphWalker{
 				G:           g,
 				SourceNodes: sourceNodeInterfaceList,
 			}
