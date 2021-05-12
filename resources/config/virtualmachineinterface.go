@@ -77,6 +77,16 @@ func (r *VirtualMachineInterfaceNode) Adder(g *graph.Graph) ([]graph.NodeInterfa
 			}
 			edgeSelectorList = append(edgeSelectorList, edgeSelector)
 		}
+
+		edgeSelector := graph.EdgeSelector{
+			NodeType: graph.VirtualNetwork,
+			Plane:    graph.ConfigPlane,
+			MatchValues: []graph.MatchValue{{
+				Value: map[string]string{"VirtualNetworkNamespaceName": fmt.Sprintf("%s/%s", resource.Spec.VirtualNetworkReference.Namespace, resource.Spec.VirtualNetworkReference.Name)},
+			}},
+		}
+		edgeSelectorList = append(edgeSelectorList, edgeSelector)
+
 		for _, virtualMachineReference := range resource.Spec.VirtualMachineReferences {
 			edgeSelector := graph.EdgeSelector{
 				NodeType: graph.VirtualMachine,

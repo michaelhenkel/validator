@@ -118,13 +118,16 @@ func (r *PodNode) Adder(g *graph.Graph) ([]graph.NodeInterface, error) {
 				networkAnnotationsList := strings.Split(networkAnnotation, "/")
 				var networkNamespaceName string
 				if len(networkAnnotationsList) == 2 {
-					networkNamespaceName = networkAnnotation
+					networkNamespaceNameList := strings.Split(networkAnnotation, "@")
+					networkNamespaceName = networkNamespaceNameList[0]
 				} else {
-					vnAnnotation := &virtualNetworkAnnotation{}
-					if err := json.Unmarshal([]byte(networkAnnotation), vnAnnotation); err != nil {
+					//vnAnnotation := &virtualNetworkAnnotation{}
+					var vnAnnotationArray []virtualNetworkAnnotation
+					if err := json.Unmarshal([]byte(networkAnnotation), &vnAnnotationArray); err != nil {
 						fmt.Println(err)
 					}
-					networkNamespaceName = fmt.Sprintf("%s/%s", vnAnnotation.Namespace, vnAnnotation.Name)
+					vnName := strings.Split(vnAnnotationArray[0].Name, "@")
+					networkNamespaceName = fmt.Sprintf("%s/%s", vnAnnotationArray[0].Namespace, vnName[0])
 				}
 				virtualNetworkEdgeSelector := graph.EdgeSelector{
 					NodeType: graph.VirtualNetwork,
