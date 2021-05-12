@@ -12,6 +12,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const PPP graph.NodeType = "dada"
+
 type PodNode struct {
 	Resource      corev1.Pod
 	EdgeLabels    []graph.EdgeLabel

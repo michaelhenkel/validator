@@ -24,11 +24,6 @@ var serveCmd = &cobra.Command{
 	},
 }
 
-func print() map[graph.NodeInterface][]graph.NodeInterface {
-	g := builder.BuildGraph(Client)
-	return g.NodeEdges
-}
-
 func serve() {
 	http.HandleFunc("/", handler)
 	http.ListenAndServe(":8090", nil)
@@ -39,11 +34,12 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	if len(r.URL.Query()) > 0 {
 		if vars, ok := r.URL.Query()["walk"]; ok {
 			varList := strings.Split(vars[0], ",")
-			nodeEdges = walker.Walk(Client, graph.NodeType(varList[0]), graph.Plane(varList[1]), varList[2])
+			//nodeEdges = walker.Walk(Client, graph.NodeType(varList[0]), graph.Plane(varList[1]), varList[2])
+			nodeEdges = walker.WalkTest(Client, graph.NodeType(varList[0]), graph.Plane(varList[1]), varList[2])
 		}
 	} else {
-		nodeEdges = print()
-
+		g := builder.BuildGraph(Client)
+		nodeEdges = g.NodeEdges
 	}
 	page := builder.RenderPage(nodeEdges)
 	if err := page.Render(w); err != nil {

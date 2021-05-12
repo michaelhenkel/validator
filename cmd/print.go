@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/michaelhenkel/validator/builder"
 	"github.com/michaelhenkel/validator/graph"
 	"github.com/michaelhenkel/validator/walker"
@@ -31,38 +33,11 @@ var printCmd = &cobra.Command{
 		g.String()
 		g.EdgeMatcher()
 		if Name != "" && NodeType != "" {
-			nodeType := graph.NodeType(NodeType)
-			plane := graph.Plane(Plane)
-			nodeInterface := g.GetNodeByTypePlaneName(nodeType, plane, Name)
-			var sourceNodeInterfaceList []graph.NodeInterface
-			sourceNodeInterfaceList = append(sourceNodeInterfaceList, nodeInterface)
-			graphWalker := walker.GraphWalker{
-				G:           g,
-				SourceNodes: sourceNodeInterfaceList,
-			}
-			graphWalker.Walk(graph.NodeFilterOption{
-				NodeType:  graph.VirtualMachine,
-				NodePlane: graph.ConfigPlane,
-			}).Walk(graph.NodeFilterOption{
-				NodeType:  graph.VirtualMachineInterface,
-				NodePlane: graph.ConfigPlane,
-			}).Walk(graph.NodeFilterOption{
-				NodeType:  graph.RoutingInstance,
-				NodePlane: graph.ConfigPlane,
-			}).Walk(graph.NodeFilterOption{
-				NodeType:  graph.RoutingInstance,
-				NodePlane: graph.ControlPlane,
-			}).Walk(graph.NodeFilterOption{
-				NodeType:  graph.BGPNeighbor,
-				NodePlane: graph.ControlPlane,
-			}).Walk(graph.NodeFilterOption{
-				NodeType:  graph.VirtualRouter,
-				NodePlane: graph.ConfigPlane,
-			}).Walk(graph.NodeFilterOption{
-				NodeType:     graph.VirtualMachine,
-				NodePlane:    graph.ConfigPlane,
-				TargetFilter: graph.VirtualMachine,
-			})
+			//nodeEdges := walker.Walk(Client, graph.NodeType(NodeType), graph.Plane(Plane), Name)
+			//fmt.Println(nodeEdges)
+
+			nodeEdges := walker.WalkTest(Client, graph.NodeType(NodeType), graph.Plane(Plane), Name)
+			fmt.Printf("%+v\n", nodeEdges)
 		}
 	},
 }

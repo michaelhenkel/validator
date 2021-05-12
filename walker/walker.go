@@ -74,3 +74,96 @@ func Walk(client *clientset.Client, nodeType graph.NodeType, plane graph.Plane, 
 	}
 	return walkerMap[nodeType](graphWalker)
 }
+
+type Walker struct {
+	Next       []Walker
+	FilterOpts graph.NodeFilterOption
+	WalkerFunc func(filterOpts graph.NodeFilterOption) *GraphWalker
+}
+
+func WalkTest(client *clientset.Client, nodeType graph.NodeType, plane graph.Plane, name string) map[graph.NodeInterface][]graph.NodeInterface {
+	g := builder.BuildGraph(client)
+	g.EdgeMatcher()
+	nodeInterface := g.GetNodeByTypePlaneName(nodeType, plane, name)
+	var sourceNodeInterfaceList []graph.NodeInterface
+	sourceNodeInterfaceList = append(sourceNodeInterfaceList, nodeInterface)
+	graphWalker := GraphWalker{
+		G:           g,
+		SourceNodes: sourceNodeInterfaceList,
+	}
+	w := Walker{
+		FilterOpts: graph.NodeFilterOption{
+			NodeType:  graph.VirtualMachine,
+			NodePlane: graph.ConfigPlane,
+		},
+		WalkerFunc: graphWalker.Walk,
+		Next: []Walker{{
+			FilterOpts: graph.NodeFilterOption{
+				NodeType:  graph.VirtualMachineInterface,
+				NodePlane: graph.ConfigPlane,
+			},
+			WalkerFunc: graphWalker.Walk,
+			Next: []Walker{{
+				FilterOpts: graph.NodeFilterOption{
+					NodeType:  graph.RoutingInstance,
+					NodePlane: graph.ConfigPlane,
+				},
+				WalkerFunc: graphWalker.Walk,
+				Next: []Walker{{
+					FilterOpts: graph.NodeFilterOption{
+						NodeType:  graph.RoutingInstance,
+						NodePlane: graph.ControlPlane,
+					},
+					WalkerFunc: graphWalker.Walk,
+					Next: []Walker{{
+						FilterOpts: graph.NodeFilterOption{
+							NodeType:  graph.BGPNeighbor,
+							NodePlane: graph.ControlPlane,
+							ErrorMsg:  "no bgp neighbor for routing instance in control, check xmpp",
+						},
+						WalkerFunc: graphWalker.Walk,
+						Next: []Walker{{
+							FilterOpts: graph.NodeFilterOption{
+								NodeType:  graph.VirtualRouter,
+								NodePlane: graph.ConfigPlane,
+							},
+							WalkerFunc: graphWalker.Walk,
+							Next: []Walker{{
+								FilterOpts: graph.NodeFilterOption{
+									NodeType:     graph.VirtualMachine,
+									NodePlane:    graph.ConfigPlane,
+									TargetFilter: graph.VirtualMachine,
+								},
+								WalkerFunc: graphWalker.Walk,
+							}},
+						}},
+					}},
+				}},
+			}},
+		}, {
+			FilterOpts: graph.NodeFilterOption{
+				NodeType:  graph.VirtualNetwork,
+				NodePlane: graph.ConfigPlane,
+			},
+			WalkerFunc: graphWalker.Walk,
+		}},
+	}
+	w.runner()
+	return graphWalker.Result
+}
+
+func (w Walker) runner() {
+	w.WalkerFunc(w.FilterOpts)
+	if len(w.Next) > 0 {
+		if len(w.Next) == 2 {
+			fmt.Println("2")
+		}
+		for _, nextWalker := range w.Next {
+			fmt.Println(w.FilterOpts.NodeType)
+			if w.FilterOpts.NodeType == graph.VirtualNetwork {
+				fmt.Println("vb")
+			}
+			nextWalker.runner()
+		}
+	}
+}
