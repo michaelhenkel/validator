@@ -7,6 +7,7 @@ import (
 	"github.com/michaelhenkel/validator/render"
 	configresources "github.com/michaelhenkel/validator/resources/config"
 	controlresources "github.com/michaelhenkel/validator/resources/control"
+	dataresources "github.com/michaelhenkel/validator/resources/data"
 )
 
 func BuildGraph(clientConfig *clientset.Client) *graph.Graph {
@@ -27,6 +28,9 @@ func BuildGraph(clientConfig *clientset.Client) *graph.Graph {
 	virtualMachineInterfaceConfig := configresources.VirtualMachineInterfaceNode{}
 	virtualMachineConfig := configresources.VirtualMachineNode{}
 	virtualNetworkConfig := configresources.VirtualNetworkNode{}
+	virtualNetworkData := dataresources.VirtualNetworkNode{}
+	routingInstanceData := dataresources.RoutingInstanceNode{}
+	virtualMachineInterfaceData := dataresources.VirtualMachineInterfaceNode{}
 
 	g.NodeAdder(virtualRouter.AdderFunc()).
 		NodeAdder(bgpNeighbor.AdderFunc()).
@@ -43,6 +47,9 @@ func BuildGraph(clientConfig *clientset.Client) *graph.Graph {
 		NodeAdder(virtualNetworkConfig.AdderFunc()).
 		NodeAdder(routingInstanceControl.AdderFunc()).
 		NodeAdder(kubemanager.AdderFunc()).
+		NodeAdder(virtualNetworkData.AdderFunc()).
+		NodeAdder(routingInstanceData.AdderFunc()).
+		NodeAdder(virtualMachineInterfaceData.AdderFunc()).
 		EdgeMatcher()
 	return g
 }

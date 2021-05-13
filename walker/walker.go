@@ -60,7 +60,7 @@ func (gw *GraphWalker) Walk(filterOpts graph.NodeFilterOption) *GraphWalker {
 	return gw
 }
 
-func (gw *GraphWalker) Walk2(sourceNodes []graph.NodeInterface, filterOpts graph.NodeFilterOption) []graph.NodeInterface {
+func (gw *GraphWalker) Walk2(sourceNodes []graph.NodeInterface, filterOpts []graph.NodeFilterOption) []graph.NodeInterface {
 	var nodeInterfaceList []graph.NodeInterface
 	if gw.Tracker == nil {
 		gw.Tracker = make(map[graph.NodeInterface]struct{})
@@ -71,34 +71,41 @@ func (gw *GraphWalker) Walk2(sourceNodes []graph.NodeInterface, filterOpts graph
 	for _, sourceNode := range sourceNodes {
 		fmt.Printf("source %s:%s:%s\n", sourceNode.Plane(), sourceNode.Type(), sourceNode.Name())
 		gw.Tracker[sourceNode] = struct{}{}
-		nodeInterfaceList = append(nodeInterfaceList, gw.G.GetNodeEdge(sourceNode, filterOpts)...)
-		targetNodes := gw.G.GetNodeEdge(sourceNode, filterOpts)
-		if len(targetNodes) == 0 && filterOpts.ErrorMsg != "" {
-			errNode := &graph.ErrorNode{
-				NodeName:   fmt.Sprintf("%s\n%s", filterOpts.ErrorMsg, sourceNode.Name()),
-				ErrorPlane: sourceNode.Plane(),
+		for _, filterOpt := range filterOpts {
+			if filterOpt.ID != "" {
+				fmt.Println("ID", filterOpt.ID)
 			}
-			if _, ok := gw.Result[errNode]; ok {
-				gw.Result[errNode] = append(gw.Result[errNode], sourceNode)
-			} else {
-				gw.Result[errNode] = []graph.NodeInterface{sourceNode}
-			}
-			gw.Result[sourceNode] = append(gw.Result[sourceNode], errNode)
-			fmt.Printf("--> %s:%s:%s\n", errNode.Plane(), errNode.Type(), errNode.Name())
-		} else {
-			for _, node := range targetNodes {
-				if filterOpts.TargetFilter != "" {
-					for targetNode := range gw.Tracker {
-						if targetNode.Type() == filterOpts.TargetFilter && targetNode.Name() == node.Name() {
-							fmt.Printf("--> %s:%s:%s\n", node.Plane(), node.Type(), node.Name())
-							gw.Result[sourceNode] = append(gw.Result[sourceNode], targetNode)
-							gw.Result[targetNode] = append(gw.Result[targetNode], sourceNode)
-						}
-					}
+			nodeInterfaceList = append(nodeInterfaceList, gw.G.GetNodeEdge(sourceNode, filterOpt)...)
+			targetNodes := gw.G.GetNodeEdge(sourceNode, filterOpt)
+			if len(targetNodes) == 0 && filterOpt.ErrorMsg != "" {
+				errNode := &graph.ErrorNode{
+					NodeName:   fmt.Sprintf("%s\n%s", filterOpt.ErrorMsg, sourceNode.Name()),
+					ErrorPlane: sourceNode.Plane(),
+				}
+				if _, ok := gw.Result[errNode]; ok {
+					gw.Result[errNode] = append(gw.Result[errNode], sourceNode)
 				} else {
-					fmt.Printf("--> %s:%s:%s\n", node.Plane(), node.Type(), node.Name())
-					gw.Result[sourceNode] = append(gw.Result[sourceNode], node)
-					gw.Result[node] = append(gw.Result[node], sourceNode)
+					gw.Result[errNode] = []graph.NodeInterface{sourceNode}
+				}
+				gw.Result[sourceNode] = append(gw.Result[sourceNode], errNode)
+				fmt.Printf("--> %s:%s:%s\n", errNode.Plane(), errNode.Type(), errNode.Name())
+			} else {
+				for _, targetNode := range targetNodes {
+					if filterOpt.TargetFilter != "" {
+						for trackerNode := range gw.Tracker {
+							if trackerNode.Type() == filterOpt.TargetFilter && trackerNode.Name() == targetNode.Name() {
+								fmt.Printf("--> %s:%s:%s\n", targetNode.Plane(), targetNode.Type(), targetNode.Name())
+								gw.Result[sourceNode] = append(gw.Result[sourceNode], targetNode)
+								gw.Result[targetNode] = append(gw.Result[targetNode], sourceNode)
+								//gw.Result[sourceNode] = append(gw.Result[sourceNode], trackerNode)
+								//gw.Result[trackerNode] = append(gw.Result[trackerNode], sourceNode)
+							}
+						}
+					} else {
+						fmt.Printf("--> %s:%s:%s\n", targetNode.Plane(), targetNode.Type(), targetNode.Name())
+						gw.Result[sourceNode] = append(gw.Result[sourceNode], targetNode)
+						gw.Result[targetNode] = append(gw.Result[targetNode], sourceNode)
+					}
 				}
 			}
 		}
@@ -107,6 +114,8 @@ func (gw *GraphWalker) Walk2(sourceNodes []graph.NodeInterface, filterOpts graph
 }
 
 var walkerMap = make(map[graph.NodeType]func(GraphWalker) map[graph.NodeInterface][]graph.NodeInterface)
+
+var walker2Map = make(map[graph.NodeType]func(g *graph.Graph, nodeType graph.NodeType, plane graph.Plane, name string) map[graph.NodeInterface][]graph.NodeInterface)
 
 func Walk(client *clientset.Client, nodeType graph.NodeType, plane graph.Plane, name string) map[graph.NodeInterface][]graph.NodeInterface {
 	g := builder.BuildGraph(client)
@@ -123,94 +132,135 @@ func Walk(client *clientset.Client, nodeType graph.NodeType, plane graph.Plane, 
 
 type Walker struct {
 	Next       []Walker
-	FilterOpts graph.NodeFilterOption
-	WalkerFunc func(sourceNodes []graph.NodeInterface, filterOpts graph.NodeFilterOption) []graph.NodeInterface
+	FilterOpts []graph.NodeFilterOption
+	WalkerFunc func(sourceNodes []graph.NodeInterface, filterOpts []graph.NodeFilterOption) []graph.NodeInterface
 }
 
 func WalkTest(client *clientset.Client, nodeType graph.NodeType, plane graph.Plane, name string) map[graph.NodeInterface][]graph.NodeInterface {
 	g := builder.BuildGraph(client)
 	g.EdgeMatcher()
-	nodeInterface := g.GetNodeByTypePlaneName(nodeType, plane, name)
-	var sourceNodeInterfaceList []graph.NodeInterface
-	sourceNodeInterfaceList = append(sourceNodeInterfaceList, nodeInterface)
-	graphWalker := GraphWalker{
-		G:           g,
-		SourceNodes: sourceNodeInterfaceList,
-	}
-	w := Walker{
-		FilterOpts: graph.NodeFilterOption{
-			NodeType:  graph.VirtualMachine,
-			NodePlane: graph.ConfigPlane,
-		},
-		WalkerFunc: graphWalker.Walk2,
-		Next: []Walker{{
-			FilterOpts: graph.NodeFilterOption{
-				NodeType:  graph.VirtualMachineInterface,
+	/*
+		nodeInterface := g.GetNodeByTypePlaneName(nodeType, plane, name)
+		var sourceNodeInterfaceList []graph.NodeInterface
+		sourceNodeInterfaceList = append(sourceNodeInterfaceList, nodeInterface)
+		graphWalker := GraphWalker{
+			G:           g,
+			SourceNodes: sourceNodeInterfaceList,
+		}
+		w := Walker{
+			FilterOpts: []graph.NodeFilterOption{{
+				NodeType:  graph.VirtualMachine,
 				NodePlane: graph.ConfigPlane,
-			},
+			}, {
+				NodeType:  graph.K8SNode,
+				NodePlane: graph.ConfigPlane,
+			}},
 			WalkerFunc: graphWalker.Walk2,
 			Next: []Walker{{
-				FilterOpts: graph.NodeFilterOption{
-					NodeType:  graph.RoutingInstance,
+				FilterOpts: []graph.NodeFilterOption{{
+					NodeType:  graph.VirtualMachineInterface,
 					NodePlane: graph.ConfigPlane,
-				},
+				}},
 				WalkerFunc: graphWalker.Walk2,
 				Next: []Walker{{
-					FilterOpts: graph.NodeFilterOption{
-						NodeType:  graph.VirtualNetwork,
-						NodePlane: graph.ConfigPlane,
-					},
-					WalkerFunc: graphWalker.Walk2,
-					Next: []Walker{{
-						FilterOpts: graph.NodeFilterOption{
-							NodeType:     graph.Pod,
-							NodePlane:    graph.ConfigPlane,
-							TargetFilter: graph.Pod,
-						},
-						WalkerFunc: graphWalker.Walk2,
-					}, {
-						FilterOpts: graph.NodeFilterOption{
-							NodeType:     graph.VirtualMachineInterface,
-							NodePlane:    graph.ConfigPlane,
-							TargetFilter: graph.VirtualMachineInterface,
-						},
-						WalkerFunc: graphWalker.Walk2,
-					}},
-				}, {
-					FilterOpts: graph.NodeFilterOption{
+					FilterOpts: []graph.NodeFilterOption{{
 						NodeType:  graph.RoutingInstance,
-						NodePlane: graph.ControlPlane,
-					},
+						NodePlane: graph.ConfigPlane,
+					}},
 					WalkerFunc: graphWalker.Walk2,
 					Next: []Walker{{
-						FilterOpts: graph.NodeFilterOption{
-							NodeType:  graph.BGPNeighbor,
-							NodePlane: graph.ControlPlane,
-							ErrorMsg:  "no bgp neighbor for routing instance in control, check xmpp",
-						},
+						FilterOpts: []graph.NodeFilterOption{{
+							NodeType:  graph.VirtualNetwork,
+							NodePlane: graph.ConfigPlane,
+						}},
 						WalkerFunc: graphWalker.Walk2,
 						Next: []Walker{{
-							FilterOpts: graph.NodeFilterOption{
-								NodeType:  graph.VirtualRouter,
-								NodePlane: graph.ConfigPlane,
-							},
+							FilterOpts: []graph.NodeFilterOption{{
+								NodeType:     graph.Pod,
+								NodePlane:    graph.ConfigPlane,
+								TargetFilter: graph.Pod,
+							}},
+							WalkerFunc: graphWalker.Walk2,
+						}, {
+							FilterOpts: []graph.NodeFilterOption{{
+								NodeType:     graph.VirtualMachineInterface,
+								NodePlane:    graph.ConfigPlane,
+								TargetFilter: graph.VirtualMachineInterface,
+							}},
+							WalkerFunc: graphWalker.Walk2,
+						}},
+					}, {
+						FilterOpts: []graph.NodeFilterOption{{
+							NodeType:  graph.RoutingInstance,
+							NodePlane: graph.ControlPlane,
+							ErrorMsg:  "no bgp neighbor for routing instance in control, check xmpp",
+						}},
+						WalkerFunc: graphWalker.Walk2,
+						Next: []Walker{{
+							FilterOpts: []graph.NodeFilterOption{{
+								NodeType:  graph.BGPNeighbor,
+								NodePlane: graph.ControlPlane,
+								ErrorMsg:  "no bgp neighbor for routing instance in control, check xmpp",
+							}},
 							WalkerFunc: graphWalker.Walk2,
 							Next: []Walker{{
-								FilterOpts: graph.NodeFilterOption{
-									NodeType:     graph.VirtualMachine,
-									NodePlane:    graph.ConfigPlane,
-									TargetFilter: graph.VirtualMachine,
-								},
+								FilterOpts: []graph.NodeFilterOption{{
+									NodeType:  graph.RoutingInstance,
+									NodePlane: graph.DataPlane,
+									//TargetFilter: graph.RoutingInstance,
+								}},
 								WalkerFunc: graphWalker.Walk2,
+								Next: []Walker{{
+									FilterOpts: []graph.NodeFilterOption{{
+										NodeType:  graph.VirtualNetwork,
+										NodePlane: graph.DataPlane,
+									}},
+									WalkerFunc: graphWalker.Walk2,
+									Next: []Walker{{
+										FilterOpts: []graph.NodeFilterOption{{
+											NodeType:  graph.VirtualMachineInterface,
+											NodePlane: graph.DataPlane,
+										}},
+										WalkerFunc: graphWalker.Walk2,
+									}},
+								}},
+							}, {
+								FilterOpts: []graph.NodeFilterOption{{
+									NodeType:  graph.VirtualRouter,
+									NodePlane: graph.ConfigPlane,
+								}},
+								WalkerFunc: graphWalker.Walk2,
+								Next: []Walker{{
+									FilterOpts: []graph.NodeFilterOption{{
+										NodeType:     graph.VirtualMachine,
+										NodePlane:    graph.ConfigPlane,
+										TargetFilter: graph.VirtualMachine,
+									}},
+									WalkerFunc: graphWalker.Walk2,
+								}, {
+									FilterOpts: []graph.NodeFilterOption{{
+										NodeType:  graph.Pod,
+										NodePlane: graph.ConfigPlane,
+									}},
+									WalkerFunc: graphWalker.Walk2,
+									Next: []Walker{{
+										FilterOpts: []graph.NodeFilterOption{{
+											NodeType:  graph.K8SNode,
+											NodePlane: graph.ConfigPlane,
+										}},
+										WalkerFunc: graphWalker.Walk2,
+									}},
+								}},
 							}},
 						}},
 					}},
 				}},
 			}},
-		}},
-	}
-	w.runner(sourceNodeInterfaceList)
-	return graphWalker.Result
+		}
+		w.runner(sourceNodeInterfaceList)
+		return graphWalker.Result
+	*/
+	return walker2Map[nodeType](g, nodeType, plane, name)
 }
 
 func (w Walker) runner(sourceNodes []graph.NodeInterface) {

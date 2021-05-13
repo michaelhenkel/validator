@@ -13,7 +13,7 @@ func graphNodes(nodeEdges map[graph.NodeInterface][]graph.NodeInterface) []opts.
 	var graphNodes []opts.GraphNode
 	for k := range nodeEdges {
 		graphNode := opts.GraphNode{
-			Name:       fmt.Sprintf("%s:%s", k.Type(), k.Name()),
+			Name:       fmt.Sprintf("%s:%s:%s", k.Plane(), k.Type(), k.Name()),
 			SymbolSize: 40,
 		}
 		graphNode.Symbol = graph.PlaneSymbolMap[k.Plane()]
@@ -41,8 +41,8 @@ func graphBase(nodeEdges map[graph.NodeInterface][]graph.NodeInterface) *charts.
 	for sourceNode, targetNodes := range nodeEdges {
 		for _, targetNode := range targetNodes {
 			edge := opts.GraphLink{
-				Source: fmt.Sprintf("%s:%s", sourceNode.Type(), sourceNode.Name()),
-				Target: fmt.Sprintf("%s:%s", targetNode.Type(), targetNode.Name()),
+				Source: fmt.Sprintf("%s:%s:%s", sourceNode.Plane(), sourceNode.Type(), sourceNode.Name()),
+				Target: fmt.Sprintf("%s:%s:%s", targetNode.Plane(), targetNode.Type(), targetNode.Name()),
 				Value:  10,
 			}
 			edges = append(edges, edge)

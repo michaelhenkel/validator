@@ -71,7 +71,7 @@ func (r *RoutingInstanceNode) Adder(g *graph.Graph) ([]graph.NodeInterface, erro
 			NodeType: graph.RoutingInstance,
 			Plane:    graph.ControlPlane,
 			MatchValues: []graph.MatchValue{{
-				Value: map[string]string{"RoutingInstanceName": fmt.Sprintf("%s:%s", resource.Namespace, resource.Name)},
+				Value: map[string]string{"RoutingInstanceName": fmt.Sprintf("%s/%s", resource.Namespace, resource.Name)},
 			}},
 		}
 		edgeSelectorList = append(edgeSelectorList, edgeSelector)

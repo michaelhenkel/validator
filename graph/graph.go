@@ -258,6 +258,7 @@ type NodeFilterOption struct {
 	NodePlane    Plane
 	TargetFilter NodeType
 	ErrorMsg     string
+	ID           string
 }
 
 func (g *Graph) GetNodeEdge(node NodeInterface, filterOpts NodeFilterOption) []NodeInterface {

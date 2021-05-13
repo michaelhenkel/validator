@@ -94,7 +94,15 @@ func (r *BGPNeighborNode) Adder(g *graph.Graph) ([]graph.NodeInterface, error) {
 						NodeType: graph.RoutingInstance,
 						Plane:    graph.ControlPlane,
 						MatchValues: []graph.MatchValue{{
-							Value: map[string]string{"RoutingInstanceName": fmt.Sprintf("%s:%s", routingInstanceList[1], routingInstanceList[3])},
+							Value: map[string]string{"RoutingInstanceName": fmt.Sprintf("%s/%s", routingInstanceList[1], routingInstanceList[3])},
+						}},
+					}
+					edgeSelectorList = append(edgeSelectorList, edgeSelector)
+					edgeSelector = graph.EdgeSelector{
+						NodeType: graph.RoutingInstance,
+						Plane:    graph.DataPlane,
+						MatchValues: []graph.MatchValue{{
+							Value: map[string]string{"RoutingInstanceName": fmt.Sprintf("%s/%s", routingInstanceList[1], routingInstanceList[3])},
 						}},
 					}
 					edgeSelectorList = append(edgeSelectorList, edgeSelector)
