@@ -2,36 +2,6 @@ package walker
 
 import "github.com/michaelhenkel/validator/graph"
 
-func podWalker(graphWalker GraphWalker) map[graph.NodeInterface][]graph.NodeInterface {
-	graphWalker.Walk(graph.NodeFilterOption{
-		NodeType:  graph.VirtualMachine,
-		NodePlane: graph.ConfigPlane,
-	}).Walk(graph.NodeFilterOption{
-		NodeType:  graph.VirtualMachineInterface,
-		NodePlane: graph.ConfigPlane,
-	}).Walk(graph.NodeFilterOption{
-		NodeType:  graph.RoutingInstance,
-		NodePlane: graph.ConfigPlane,
-		ErrorMsg:  "no routing instance in config",
-	}).Walk(graph.NodeFilterOption{
-		NodeType:  graph.RoutingInstance,
-		NodePlane: graph.ControlPlane,
-		ErrorMsg:  "no routing instance in control, check xmpp",
-	}).Walk(graph.NodeFilterOption{
-		NodeType:  graph.BGPNeighbor,
-		NodePlane: graph.ControlPlane,
-		ErrorMsg:  "no bgp neighbor for routing instance in control, check xmpp",
-	}).Walk(graph.NodeFilterOption{
-		NodeType:  graph.VirtualRouter,
-		NodePlane: graph.ConfigPlane,
-	}).Walk(graph.NodeFilterOption{
-		NodeType:     graph.VirtualMachine,
-		NodePlane:    graph.ConfigPlane,
-		TargetFilter: graph.VirtualMachine,
-	})
-	return graphWalker.Result
-}
-
 func podToVrouter(g *graph.Graph, nodeType graph.NodeType, plane graph.Plane, name string) map[graph.NodeInterface][]graph.NodeInterface {
 	nodeInterface := g.GetNodeByTypePlaneName(nodeType, plane, name)
 	var sourceNodeInterfaceList []graph.NodeInterface
@@ -83,7 +53,6 @@ func podToVrouter(g *graph.Graph, nodeType graph.NodeType, plane graph.Plane, na
 					FilterOpts: []graph.NodeFilterOption{{
 						NodeType:  graph.RoutingInstance,
 						NodePlane: graph.ControlPlane,
-						ErrorMsg:  "no bgp neighbor for routing instance in control, check xmpp",
 					}},
 					WalkerFunc: graphWalker.Walk2,
 					Next: []Walker{{
@@ -102,16 +71,16 @@ func podToVrouter(g *graph.Graph, nodeType graph.NodeType, plane graph.Plane, na
 							WalkerFunc: graphWalker.Walk2,
 							Next: []Walker{{
 								FilterOpts: []graph.NodeFilterOption{{
-									NodeType:  graph.VirtualNetwork,
-									NodePlane: graph.DataPlane,
-									//TargetFilter: graph.VirtualNetwork,
+									NodeType:     graph.VirtualNetwork,
+									NodePlane:    graph.DataPlane,
+									TargetFilter: graph.VirtualNetwork,
 								}},
 								WalkerFunc: graphWalker.Walk2,
 								Next: []Walker{{
 									FilterOpts: []graph.NodeFilterOption{{
-										NodeType:  graph.VirtualMachineInterface,
-										NodePlane: graph.DataPlane,
-										//TargetFilter: graph.VirtualMachineInterface,
+										NodeType:     graph.VirtualMachineInterface,
+										NodePlane:    graph.DataPlane,
+										TargetFilter: graph.VirtualMachineInterface,
 									}},
 									WalkerFunc: graphWalker.Walk2,
 								}},
@@ -141,6 +110,5 @@ func podToVrouter(g *graph.Graph, nodeType graph.NodeType, plane graph.Plane, na
 }
 
 func init() {
-	walkerMap[graph.Pod] = podWalker
 	walker2Map[graph.Pod] = podToVrouter
 }

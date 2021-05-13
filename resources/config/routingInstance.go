@@ -29,7 +29,7 @@ func (r *RoutingInstanceNode) AdderFunc() func(g *graph.Graph) ([]graph.NodeInte
 }
 
 func (r *RoutingInstanceNode) Name() string {
-	return r.Resource.Name
+	return fmt.Sprintf("%s:%s", r.Resource.Namespace, r.Resource.Name)
 }
 
 func (r *RoutingInstanceNode) Type() graph.NodeType {

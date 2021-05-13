@@ -29,7 +29,7 @@ func (r *VirtualMachineNode) AdderFunc() func(g *graph.Graph) ([]graph.NodeInter
 }
 
 func (r *VirtualMachineNode) Name() string {
-	return r.Resource.Name
+	return fmt.Sprintf("%s:%s", r.Resource.Namespace, r.Resource.Name)
 }
 
 func (r *VirtualMachineNode) Type() graph.NodeType {
