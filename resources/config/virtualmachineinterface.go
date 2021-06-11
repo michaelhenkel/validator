@@ -54,10 +54,15 @@ func (r *VirtualMachineInterfaceNode) Adder(g *graph.Graph) ([]graph.NodeInterfa
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println("start")
+	getspecvals()
+	getstatusvals()
+	fmt.Println("end")
 	for _, resource := range resourceList.Items {
 		r.Resource = resource
 		var edgeSelectorList []graph.EdgeSelector
 		if resource.Spec.Parent.Kind == "VirtualRouter" {
+			fmt.Println("Parent Found for Virtural Router! Name is: ", resource.Spec.Parent.Name)
 			edgeSelector := graph.EdgeSelector{
 				NodeType: graph.VirtualRouter,
 				Plane:    graph.ConfigPlane,
@@ -68,6 +73,7 @@ func (r *VirtualMachineInterfaceNode) Adder(g *graph.Graph) ([]graph.NodeInterfa
 			edgeSelectorList = append(edgeSelectorList, edgeSelector)
 		}
 		for _, routingInstanceReference := range resource.Status.RoutingInstanceReferences {
+			fmt.Println("Parent Found for RoutingInstanceReferences! Name is: ", routingInstanceReference.Name)
 			edgeSelector := graph.EdgeSelector{
 				NodeType: graph.RoutingInstance,
 				Plane:    graph.ConfigPlane,
