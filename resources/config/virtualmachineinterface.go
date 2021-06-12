@@ -48,6 +48,8 @@ func (r *VirtualMachineInterfaceNode) GetEdgeSelectors() []graph.EdgeSelector {
 	return r.EdgeSelectors
 }
 
+var originalresource sourcecoderesource
+
 func (r *VirtualMachineInterfaceNode) Adder(g *graph.Graph) ([]graph.NodeInterface, error) {
 	var graphNodeList []graph.NodeInterface
 	resourceList, err := g.ClientConfig.ContrailCoreV1.VirtualMachineInterfaces("").List(context.Background(), metav1.ListOptions{})
@@ -55,8 +57,16 @@ func (r *VirtualMachineInterfaceNode) Adder(g *graph.Graph) ([]graph.NodeInterfa
 		return nil, err
 	}
 	fmt.Println("start")
-	getspecvals()
-	getstatusvals()
+	originalresource.getspecvals()
+	originalresource.getstatusvals()
+	fmt.Println("References ******")
+	for i := 0; i < len(originalresource.References); i++ {
+		fmt.Println(originalresource.References[i])
+	}
+	fmt.Println("Reference *******")
+	for i := 0; i < len(originalresource.Reference); i++ {
+		fmt.Println(originalresource.References[i])
+	}
 	fmt.Println("end")
 	for _, resource := range resourceList.Items {
 		r.Resource = resource

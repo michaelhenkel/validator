@@ -8,11 +8,20 @@ import (
 	contrailcorev1alpha1 "ssd-git.juniper.net/contrail/cn2/contrail/pkg/apis/core/v1alpha1"
 )
 
-func getspecvals() map[string][]string {
-	ret := make(map[string][]string)
+type sourcecoderesource struct {
+	Parents    []string
+	References []string
+	Reference  []string
+}
+
+func (source *sourcecoderesource) getspecvals() {
 
 	vmi := &contrailcorev1alpha1.VirtualMachineInterface{}
+	// vmi2 := &contrailcorev1alpha1.VirtualRouter{}
 	val := reflect.Indirect(reflect.ValueOf(vmi))
+	// val2 := reflect.Indirect(reflect.ValueOf(vmi2))
+	// fmt.Println(val2.Type().Name())
+
 	t := val.Type().String()
 	specField, ok := val.Type().FieldByName("Spec")
 	if !ok {
@@ -26,32 +35,22 @@ func getspecvals() map[string][]string {
 		refsFieldList := strings.Split(f.Name, "References")
 		if len(refsFieldList) > 1 {
 			referencesvisited = true
-			ret["references"] = append(ret["references"], f.Name)
-			fmt.Println("found references to ", refsFieldList[0])
-			val := reflect.Indirect(reflect.ValueOf(f.Type))
-			fmt.Println("Name is:", val)
+			source.References = append(source.References, refsFieldList[0])
 		}
 		refFieldList := strings.Split(f.Name, "Reference")
 		if len(refFieldList) > 1 && !referencesvisited {
-			ret["reference"] = append(ret["references"], f.Name)
-			fmt.Println("found reference to ", refFieldList[0])
-			fmt.Println("Name is:", reflect.Indirect(reflect.ValueOf(f)))
+			source.Reference = append(source.Reference, refFieldList[0])
 		}
 		parentFieldList := strings.Split(f.Name, "Parent")
 		if len(parentFieldList) > 1 {
-			ret["parent"] = append(ret["references"], f.Name)
-			fmt.Println("found Parent to ", parentFieldList[0])
-			val := f.Tag
-			fmt.Println("Name is:", val)
+			source.Parents = append(source.Parents, parentFieldList[0])
 		}
 	}
 	fmt.Println("SpecField", specField)
 	fmt.Println("Type", t)
-	return ret
 }
 
-func getstatusvals() map[string][]string {
-	ret := make(map[string][]string)
+func (source *sourcecoderesource) getstatusvals() {
 	vmi := &contrailcorev1alpha1.VirtualMachineInterface{}
 	val := reflect.Indirect(reflect.ValueOf(vmi))
 	t := val.Type().String()
@@ -68,25 +67,17 @@ func getstatusvals() map[string][]string {
 		refsFieldList := strings.Split(f.Name, "References")
 		if len(refsFieldList) > 1 {
 			referencesvisited = true
-
-			ret["references"] = append(ret["references"], f.Name)
-			fmt.Println("found references to ", refsFieldList[0])
-			fmt.Println("Name is:", reflect.Indirect(reflect.ValueOf(f)))
+			source.References = append(source.References, refsFieldList[0])
 		}
 		refFieldList := strings.Split(f.Name, "Reference")
 		if len(refFieldList) > 1 && !referencesvisited {
-			ret["reference"] = append(ret["references"], f.Name)
-			fmt.Println("found reference to ", refFieldList[0])
-			fmt.Println("Name is:", reflect.Indirect(reflect.ValueOf(f)))
+			source.Reference = append(source.Reference, refFieldList[0])
 		}
 		parentFieldList := strings.Split(f.Name, "Parent")
 		if len(parentFieldList) > 1 {
-			ret["Parent"] = append(ret["references"], f.Name)
-			fmt.Println("found Parent to ", parentFieldList[0])
-			fmt.Println("Name is:", reflect.Indirect(reflect.ValueOf(f)))
+			source.Parents = append(source.Parents, parentFieldList[0])
 		}
 	}
 	fmt.Println("SpecField", statusField)
 	fmt.Println("Type", t)
-	return ret
 }
