@@ -6,6 +6,7 @@ import (
 	"reflect"
 
 	"github.com/michaelhenkel/validator/graph"
+	"ssd-git.juniper.net/contrail/cn2/contrail/pkg/apis/core/v1alpha1"
 
 	//intserver "k8s.io/api/apiserverinternal/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -64,66 +65,60 @@ func (r *VirtualMachineInterfaceNode) Adder(g *graph.Graph) ([]graph.NodeInterfa
 	originalresource.getstatusvals()
 	resource := resourceList.Items[0]
 	var edgeSelectorList []graph.EdgeSelector
+	fmt.Println("TYPES OF RESOURCES!!!!")
 	fmt.Println(reflect.TypeOf(resource.Status.RoutingInstanceReferences))
-	//hashmap := buildhash(g)
-	r.Resource = resource
-	// for i := 0; i < len(originalresource.References); i++ {
-	// 	if references, ok := hashmap[originalresource.References[i]]; ok {
-	// 		switch thetype := references.(type) {
-	// 		default:
-	// 			fmt.Println("Unexpected Type")
-	// 		case []v1alpha1.VirtualMachineInterfaceSpec.VirtualMachineReferences:
-	// 				for _, routingInstanceReference := range thetype {
-	// 				fmt.Println("References Found for RoutingInstance! Name is: ", routingInstanceReference.Name)
-	// 				edgeSelector := graph.EdgeSelector{
-	// 					NodeType: graph.RoutingInstance,
-	// 					Plane:    graph.ConfigPlane,
-	// 					MatchValues: []graph.MatchValue{{
-	// 						Value: map[string]string{"RoutingInstanceName": routingInstanceReference.Name},
-	// 					}},
-	// 				}
-	// 				edgeSelectorList = append(edgeSelectorList, edgeSelector)
-	// 			}
-	// 		case []v1alpha1.VirtualMachineInterfaceSpec.VirtualMachineReferences:
-	// 			for _, virtualmachinereference := range thetype {
-	// 				fmt.Println("References Found for VirtualMachine! Name is: ", virtualmachinereference.Name)
-	// 				edgeSelector := graph.EdgeSelector{
-	// 					NodeType: graph.RoutingInstance,
-	// 					Plane:    graph.ConfigPlane,
-	// 					MatchValues: []graph.MatchValue{{
-	// 						Value: map[string]string{"VirtualMachineName": virtualmachinereference.Name},
-	// 					}},
-	// 				}
-	// 				edgeSelectorList = append(edgeSelectorList, edgeSelector)
-	// 			}
-	// 		case []v1alpha1.VirtualMachineInterfaceSpec.VirtualNetworkReference:
-	// 			for _, virtualnetworkreference := range thetype {
-	// 				fmt.Println("References Found for VirtualNetwork! Name is: ", virtualnetworkreference.Name)
-	// 				edgeSelector := graph.EdgeSelector{
-	// 					NodeType: graph.RoutingInstance,
-	// 					Plane:    graph.ConfigPlane,
-	// 					MatchValues: []graph.MatchValue{{
-	// 						Value: map[string]string{"VirturalNetworkName": virtualnetworkreference.Name},
-	// 					}},
-	// 				}
-	// 				edgeSelectorList = append(edgeSelectorList, edgeSelector)
-	// 			}
-	// 		case []v1alpha1.VirtualMachineInterfaceStatus.BGPRouterReference:
-	// 			for _, bgprouterreference := range thetype {
-	// 				fmt.Println("References Found for BGPRouter! Name is: ", bgprouterreference.Name)
-	// 				edgeSelector := graph.EdgeSelector{
-	// 					NodeType: graph.RoutingInstance,
-	// 					Plane:    graph.ConfigPlane,
-	// 					MatchValues: []graph.MatchValue{{
-	// 						Value: map[string]string{"BGPRouterName": bgprouterreference.Name},
-	// 					}},
-	// 				}
-	// 				edgeSelectorList = append(edgeSelectorList, edgeSelector)
-	// 			}
-	// 		}
+	fmt.Println(reflect.TypeOf(resource.Spec.VirtualMachineReferences))
+	fmt.Println(reflect.TypeOf(resource.Spec.VirtualNetworkReference))
+	fmt.Println(reflect.TypeOf(resource.Status.BGPRouterReference))
 
-	// 	}
-	// }
+	r.Resource = resource
+	hashmap := buildhash(g)
+	for i := 0; i < len(originalresource.References); i++ {
+		if references, ok := hashmap[originalresource.References[i]]; ok {
+			primaryname := originalresource.References[i]
+			name := primaryname + "Name"
+			switch thetype := references.(type) {
+			default:
+				fmt.Println("Unexpected Type")
+			case []v1alpha1.RoutingInstanceReference:
+				for _, routingInstanceReference := range thetype {
+					fmt.Println("References Found for"+primaryname+"Name is: ", routingInstanceReference.Name)
+					edgeSelector := graph.EdgeSelector{
+						NodeType: graph.RoutingInstance,
+						Plane:    graph.ConfigPlane,
+						MatchValues: []graph.MatchValue{{
+							Value: map[string]string{name: routingInstanceReference.Name},
+						}},
+					}
+					edgeSelectorList = append(edgeSelectorList, edgeSelector)
+				}
+			case []v1alpha1.ResourceReference:
+				for _, resourcereference := range thetype {
+					fmt.Println("References Found for"+primaryname+"Name is: ", resourcereference.Name)
+					edgeSelector := graph.EdgeSelector{
+						NodeType: graph.RoutingInstance,
+						Plane:    graph.ConfigPlane,
+						MatchValues: []graph.MatchValue{{
+							Value: map[string]string{name: resourcereference.Name},
+						}},
+					}
+					edgeSelectorList = append(edgeSelectorList, edgeSelector)
+				}
+			case *v1alpha1.ResourceReference:
+				resourcereference := thetype
+				fmt.Println("References Found for"+primaryname+"Name is: ", resourcereference.Name)
+				edgeSelector := graph.EdgeSelector{
+					NodeType: graph.RoutingInstance,
+					Plane:    graph.ConfigPlane,
+					MatchValues: []graph.MatchValue{{
+						Value: map[string]string{name: resourcereference.Name},
+					}},
+				}
+				edgeSelectorList = append(edgeSelectorList, edgeSelector)
+
+			}
+		}
+	}
 	fmt.Println("Reference *******")
 	for i := 0; i < len(originalresource.Reference); i++ {
 		fmt.Println(originalresource.Reference[i])
