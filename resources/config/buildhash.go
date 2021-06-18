@@ -21,6 +21,7 @@ func buildhash(g *graph.Graph) map[string]interface{} {
 	if err != nil {
 		return retmap
 	}
+	retmap["Parent"] = resource.Spec.Parent
 	retmap["RoutingInstance"] = resource.Status.RoutingInstanceReferences
 	retmap["VirtualMachine"] = resource.Spec.VirtualMachineReferences
 	retmap["VirturalNetwork"] = resource.Spec.VirtualNetworkReference

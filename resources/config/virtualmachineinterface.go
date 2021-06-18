@@ -65,24 +65,21 @@ func (r *VirtualMachineInterfaceNode) Adder(g *graph.Graph) ([]graph.NodeInterfa
 	originalresource.getstatusvals()
 	resource := resourceList.Items[0]
 	var edgeSelectorList []graph.EdgeSelector
-	fmt.Println("TYPES OF RESOURCES!!!!")
-	fmt.Println(reflect.TypeOf(resource.Status.RoutingInstanceReferences))
-	fmt.Println(reflect.TypeOf(resource.Spec.VirtualMachineReferences))
-	fmt.Println(reflect.TypeOf(resource.Spec.VirtualNetworkReference))
-	fmt.Println(reflect.TypeOf(resource.Status.BGPRouterReference))
 
 	r.Resource = resource
 	hashmap := buildhash(g)
-	for i := 0; i < len(originalresource.References); i++ {
-		if references, ok := hashmap[originalresource.References[i]]; ok {
-			primaryname := originalresource.References[i]
+	combinedlist := originalresource.References
+	for i := 0; i < len(combinedlist); i++ {
+		if references, ok := hashmap[combinedlist[i]]; ok {
+			fmt.Println("Type of this value", reflect.TypeOf(references))
+			primaryname := combinedlist[i]
 			name := primaryname + "Name"
 			switch thetype := references.(type) {
 			default:
 				fmt.Println("Unexpected Type")
 			case []v1alpha1.RoutingInstanceReference:
 				for _, routingInstanceReference := range thetype {
-					fmt.Println("References Found for"+primaryname+"Name is: ", routingInstanceReference.Name)
+					fmt.Println("References Found for "+primaryname+" Name is: ", routingInstanceReference.Name)
 					edgeSelector := graph.EdgeSelector{
 						NodeType: graph.RoutingInstance,
 						Plane:    graph.ConfigPlane,
@@ -94,7 +91,7 @@ func (r *VirtualMachineInterfaceNode) Adder(g *graph.Graph) ([]graph.NodeInterfa
 				}
 			case []v1alpha1.ResourceReference:
 				for _, resourcereference := range thetype {
-					fmt.Println("References Found for"+primaryname+"Name is: ", resourcereference.Name)
+					fmt.Println("References Found for "+primaryname+" Name is: ", resourcereference.Name)
 					edgeSelector := graph.EdgeSelector{
 						NodeType: graph.RoutingInstance,
 						Plane:    graph.ConfigPlane,
@@ -105,26 +102,31 @@ func (r *VirtualMachineInterfaceNode) Adder(g *graph.Graph) ([]graph.NodeInterfa
 					edgeSelectorList = append(edgeSelectorList, edgeSelector)
 				}
 			case *v1alpha1.ResourceReference:
-				resourcereference := thetype
-				fmt.Println("References Found for"+primaryname+"Name is: ", resourcereference.Name)
+				// fmt.Println(primaryname)
+				// value := reflect.ValueOf(&references).Elem()
+				// typeofvalue := value.Type()
+				// _, ok := typeofvalue.FieldByName("Name")
+				// if !ok {
+				// 	fmt.Println("Name Field Does not exist!")
+				// 	continue
+				// }
+
+				fmt.Println("References Found for "+primaryname+" Name is: ", thetype.Name)
 				edgeSelector := graph.EdgeSelector{
 					NodeType: graph.RoutingInstance,
 					Plane:    graph.ConfigPlane,
 					MatchValues: []graph.MatchValue{{
-						Value: map[string]string{name: resourcereference.Name},
+						Value: map[string]string{name: thetype.Name},
 					}},
 				}
 				edgeSelectorList = append(edgeSelectorList, edgeSelector)
+				// case v1.ObjectReference:
 
 			}
 		}
 	}
-	fmt.Println("Reference *******")
-	for i := 0; i < len(originalresource.Reference); i++ {
-		fmt.Println(originalresource.Reference[i])
-	}
-	if resource.Spec.Parent.Kind == "VirtualRouter" {
-		fmt.Println("Parent Found for Virtural Router! Name is: ", resource.Spec.Parent.Name)
+	if len(originalresource.Parents) > 0 {
+		fmt.Println("Parent Found for Virtual Router! Name is: ", resource.Spec.Parent.Name)
 		edgeSelector := graph.EdgeSelector{
 			NodeType: graph.VirtualRouter,
 			Plane:    graph.ConfigPlane,
@@ -134,6 +136,7 @@ func (r *VirtualMachineInterfaceNode) Adder(g *graph.Graph) ([]graph.NodeInterfa
 		}
 		edgeSelectorList = append(edgeSelectorList, edgeSelector)
 	}
+	fmt.Println("End *******")
 
 	edgeSelector := graph.EdgeSelector{
 		NodeType: graph.VirtualNetwork,

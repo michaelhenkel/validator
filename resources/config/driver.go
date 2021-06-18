@@ -41,20 +41,20 @@ func (source *sourcecoderesource) getspecvals() {
 		refsFieldList := strings.Split(f.Name, "References")
 		if len(refsFieldList) > 1 {
 			referencesvisited = true
-			fmt.Println("References Found in driver", refsFieldList[0])
+			// fmt.Println("References Found in driver", refsFieldList[0])
 			source.References = append(source.References, refsFieldList[0])
 		}
 		refFieldList := strings.Split(f.Name, "Reference")
 		if len(refFieldList) > 1 && !referencesvisited {
-			fmt.Println("Reference Found in driver", refFieldList[0])
+			// fmt.Println("Reference Found in driver", refFieldList[0])
 
 			source.Reference = append(source.Reference, refFieldList[0])
 		}
 		parentFieldList := strings.Split(f.Name, "Parent")
 		if len(parentFieldList) > 1 {
-			fmt.Println("Parent Found in driver", parentFieldList[0])
+			// fmt.Println("Parent Found in driver", parentFieldList[0])
 
-			source.Parents = append(source.Parents, parentFieldList[0])
+			source.Parents = append(source.Parents, "Parent")
 		}
 	}
 	fmt.Println("SpecField", specField)
@@ -78,17 +78,17 @@ func (source *sourcecoderesource) getstatusvals() {
 		refsFieldList := strings.Split(f.Name, "References")
 		if len(refsFieldList) > 1 {
 			referencesvisited = true
-			fmt.Println("References Found in driver", refsFieldList[0])
+			// fmt.Println("References Found in driver", refsFieldList[0])
 			source.References = append(source.References, refsFieldList[0])
 		}
 		refFieldList := strings.Split(f.Name, "Reference")
 		if len(refFieldList) > 1 && !referencesvisited {
-			fmt.Println("Reference Found in driver", refFieldList[0])
+			// fmt.Println("Reference Found in driver", refFieldList[0])
 			source.Reference = append(source.Reference, refFieldList[0])
 		}
 		parentFieldList := strings.Split(f.Name, "Parent")
 		if len(parentFieldList) > 1 {
-			fmt.Println("Parent Found in driver", parentFieldList[0])
+			// fmt.Println("Parent Found in driver", parentFieldList[0])
 			source.Parents = append(source.Parents, parentFieldList[0])
 		}
 	}
