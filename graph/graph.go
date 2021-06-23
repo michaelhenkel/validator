@@ -3,6 +3,7 @@ package graph
 import (
 	"fmt"
 	"reflect"
+	"sync"
 
 	"github.com/go-echarts/go-echarts/v2/opts"
 	"github.com/michaelhenkel/validator/k8s/clientset"
@@ -98,6 +99,7 @@ type GraphNode struct {
 }
 
 type Graph struct {
+	mu           sync.Mutex
 	nodes        map[GraphNode]struct{}
 	ClientConfig *clientset.Client
 	NodeEdges    map[NodeInterface][]NodeInterface
@@ -158,8 +160,23 @@ func NewGraph(clientConfig *clientset.Client) *Graph {
 }
 
 func (g *Graph) EdgeMatcher() {
-	g.NodeEdges = make(map[NodeInterface][]NodeInterface)
+	var worklist []GraphNode
+	c := make(chan int)
 	for graphNode := range g.nodes {
+		worklist = append(worklist, graphNode)
+	}
+	worklistlen := len(worklist)
+	go g.EdgeMatchWorker(worklist[0:worklistlen/3], c)
+	go g.EdgeMatchWorker(worklist[worklistlen/3:(worklistlen*2/3)], c)
+	go g.EdgeMatchWorker(worklist[(worklistlen*2/3):], c)
+	fmt.Println(<-c)
+	fmt.Println(<-c)
+	fmt.Println(<-c)
+}
+
+func (g *Graph) EdgeMatchWorker(workload []GraphNode, c chan int) {
+	g.NodeEdges = make(map[NodeInterface][]NodeInterface)
+	for _, graphNode := range workload {
 		for _, nodeEdgeSelector := range graphNode.Node.GetEdgeSelectors() {
 			for _, dstNodeInterface := range g.GetNodesByTypePlane(nodeEdgeSelector.NodeType, nodeEdgeSelector.Plane) {
 				for _, dstEdgeLabel := range dstNodeInterface.GetEdgeLabels() {
@@ -176,13 +193,16 @@ func (g *Graph) EdgeMatcher() {
 					}
 					if match {
 						fmt.Printf("Found edge from %s:%s to %s:%s\n", graphNode.Node.Type(), graphNode.Node.Name(), dstNodeInterface.Type(), dstNodeInterface.Name())
+						g.mu.Lock()
 						g.NodeEdges[graphNode.Node] = append(g.NodeEdges[graphNode.Node], dstNodeInterface)
 						g.NodeEdges[dstNodeInterface] = append(g.NodeEdges[dstNodeInterface], graphNode.Node)
+						g.mu.Unlock()
 					}
 				}
 			}
 		}
 	}
+	c <- 0
 }
 
 func (g *Graph) NodeAdder(adder func(g *Graph) ([]NodeInterface, error)) *Graph {

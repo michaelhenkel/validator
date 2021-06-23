@@ -1,8 +1,10 @@
 package cmd
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/michaelhenkel/validator/builder"
 	"github.com/michaelhenkel/validator/graph"
@@ -30,6 +32,8 @@ func serve() {
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
+	start := time.Now()
+
 	var nodeEdges map[graph.NodeInterface][]graph.NodeInterface
 	if len(r.URL.Query()) > 0 {
 		if vars, ok := r.URL.Query()["walk"]; ok {
@@ -45,5 +49,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	if err := page.Render(w); err != nil {
 		panic(err)
 	}
+	duration := time.Since(start)
+	fmt.Println("Execution time: ", duration)
 
 }
