@@ -54,80 +54,10 @@ func (r *RoutingInstanceNode) Adder(g *graph.Graph) ([]graph.NodeInterface, erro
 	if err != nil {
 		return nil, err
 	}
-	// var originalresource sourcecoderesource
-	// originalresource.getspecvals("RoutingInstance")
-	// originalresource.getstatusvals("RoutingInstance")
-	// hashmap := buildhash(g, "RoutingInstance")
-	// combinedlist := append(originalresource.References, originalresource.Reference...)
-	var edgeSelectorList []graph.EdgeSelector
-	// for i := 0; i < len(combinedlist); i++ {
-	// 	if references, ok := hashmap[combinedlist[i]]; ok {
-	// 		primaryname := combinedlist[i]
-	// 		name := primaryname + "Name"
-	// 		switch thetype := references.(type) {
-	// 		default:
-	// 			fmt.Println("Unexpected Type")
-	// 		case []v1alpha1.RoutingInstanceReference:
-	// 			if thetype != nil {
-	// 				for _, routingInstanceReference := range thetype {
-	// 					val := reflect.Indirect(reflect.ValueOf(routingInstanceReference))
-	// 					_, ok := val.Type().FieldByName("Name")
-	// 					if ok {
-	// 						//fmt.Println("References Found for "+primaryname+" Name is: ", routingInstanceReference.Name)
-	// 						edgeSelector := graph.EdgeSelector{
-	// 							NodeType: graph.RoutingInstance,
-	// 							Plane:    graph.ConfigPlane,
-	// 							MatchValues: []graph.MatchValue{{
-	// 								Value: map[string]string{name: routingInstanceReference.Name},
-	// 							}},
-	// 						}
-	// 						edgeSelectorList = append(edgeSelectorList, edgeSelector)
-	// 					}
-	// 				}
-	// 			}
-	// 		case []v1alpha1.ResourceReference:
-	// 			if thetype != nil {
-	// 				for _, resourcereference := range thetype {
-	// 					val := reflect.Indirect(reflect.ValueOf(resourcereference))
-	// 					_, ok := val.Type().FieldByName("Name")
-	// 					if ok {
-	// 						//fmt.Println("References Found for "+primaryname+" Name is: ", resourcereference.Name)
-	// 						edgeSelector := graph.EdgeSelector{
-	// 							NodeType: graph.RoutingInstance,
-	// 							Plane:    graph.ConfigPlane,
-	// 							MatchValues: []graph.MatchValue{{
-	// 								Value: map[string]string{name: resourcereference.Name},
-	// 							}},
-	// 						}
-	// 						edgeSelectorList = append(edgeSelectorList, edgeSelector)
-	// 					}
-	// 				}
-	// 			}
-
-	// 		case *v1alpha1.ResourceReference:
-	// 			if thetype != nil {
-	// 				val := reflect.Indirect(reflect.ValueOf(thetype))
-	// 				_, ok := val.Type().FieldByName("Name")
-	// 				if ok {
-	// 					//fmt.Println("References Found for "+primaryname+" Name is: ", thetype.Name)
-	// 					edgeSelector := graph.EdgeSelector{
-	// 						NodeType: graph.RoutingInstance,
-	// 						Plane:    graph.ConfigPlane,
-	// 						MatchValues: []graph.MatchValue{{
-	// 							Value: map[string]string{name: thetype.Name},
-	// 						}},
-	// 					}
-	// 					edgeSelectorList = append(edgeSelectorList, edgeSelector)
-	// 				}
-	// 			}
-	// 		}
-	// 	}
-	// }
-
 	for _, resource := range resourceList.Items {
 		r.Resource = resource
+		var edgeSelectorList []graph.EdgeSelector
 		if resource.Spec.Parent.Kind == "VirtualNetwork" {
-			fmt.Println("Found Virtual Network", resource.Spec.Parent.Namespace, resource.Spec.Parent.Name)
 			edgeSelector := graph.EdgeSelector{
 				NodeType: graph.VirtualNetwork,
 				Plane:    graph.ConfigPlane,
@@ -137,8 +67,6 @@ func (r *RoutingInstanceNode) Adder(g *graph.Graph) ([]graph.NodeInterface, erro
 			}
 			edgeSelectorList = append(edgeSelectorList, edgeSelector)
 		}
-		fmt.Println("Found Routing Instance", resource.Namespace, resource.Name)
-
 		edgeSelector := graph.EdgeSelector{
 			NodeType: graph.RoutingInstance,
 			Plane:    graph.ControlPlane,
