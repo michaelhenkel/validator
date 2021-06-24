@@ -24,17 +24,25 @@ Populates the sourcecode pointer with Parents, References, and Reference.
 @Params None
 @Return None
 **/
-func (source *sourcecoderesource) getspecvals() {
-
-	vmi := &contrailcorev1alpha1.VirtualMachineInterface{}
+func (source *sourcecoderesource) getspecvals(instance string) {
+	var vmi interface{}
+	switch instance {
+	case "VirtualMachineInterface":
+		vmi = &contrailcorev1alpha1.VirtualMachineInterface{}
+	case "RoutingInstance":
+		vmi = &contrailcorev1alpha1.RoutingInstance{}
+	default:
+		fmt.Println("Bad!")
+	}
 	val := reflect.Indirect(reflect.ValueOf(vmi))
-	t := val.Type().String()
+	//t := val.Type().String()
 	specField, ok := val.Type().FieldByName("Spec")
 	if !ok {
 		fmt.Println("no spec field")
+		return
 	}
 	specVal := reflect.Indirect(reflect.ValueOf(specField))
-	specFieldNum := specVal.NumField()
+	specFieldNum := reflect.TypeOf(specVal).NumField()
 	for i := 0; i < specFieldNum; i++ {
 		f := specField.Type.Field(i)
 		referencesvisited := false
@@ -57,17 +65,26 @@ func (source *sourcecoderesource) getspecvals() {
 			source.Parents = append(source.Parents, "Parent")
 		}
 	}
-	fmt.Println("SpecField", specField)
-	fmt.Println("Type", t)
+	// fmt.Println("SpecField", specField)
+	// fmt.Println("Type", t)
 }
 
-func (source *sourcecoderesource) getstatusvals() {
-	vmi := &contrailcorev1alpha1.VirtualMachineInterface{}
+func (source *sourcecoderesource) getstatusvals(instance string) {
+	var vmi interface{}
+	switch instance {
+	case "VirtualMachineInterface":
+		vmi = &contrailcorev1alpha1.VirtualMachineInterface{}
+	case "RoutingInstance":
+		vmi = &contrailcorev1alpha1.RoutingInstance{}
+	default:
+		fmt.Println("Bad!")
+	}
 	val := reflect.Indirect(reflect.ValueOf(vmi))
-	t := val.Type().String()
+	//t := val.Type().String()
 	statusField, ok := val.Type().FieldByName("Status")
 	if !ok {
 		fmt.Println("no status field")
+		return
 	}
 	statusval := reflect.Indirect(reflect.ValueOf(statusField))
 	statusFieldNum := reflect.TypeOf(statusval).NumField()
@@ -92,6 +109,6 @@ func (source *sourcecoderesource) getstatusvals() {
 			source.Parents = append(source.Parents, parentFieldList[0])
 		}
 	}
-	fmt.Println("SpecField", statusField)
-	fmt.Println("Type", t)
+	// fmt.Println("SpecField", statusField)
+	// fmt.Println("Type", t)
 }
