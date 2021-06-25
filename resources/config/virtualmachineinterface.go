@@ -60,9 +60,7 @@ func (r *VirtualMachineInterfaceNode) Adder(g *graph.Graph) ([]graph.NodeInterfa
 		return nil, err
 	}
 	var originalresource sourcecoderesource
-	fmt.Println("start")
-	originalresource.getspecvals()
-	originalresource.getstatusvals()
+	originalresource.getspecandstatusvals("virtualmachineinterface")
 	for i := 0; i < len(resourceList.Items); i++ {
 		resource := resourceList.Items[i]
 		r.Resource = resource

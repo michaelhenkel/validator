@@ -24,9 +24,16 @@ Populates the sourcecode pointer with Parents, References, and Reference.
 @Params None
 @Return None
 **/
-func (source *sourcecoderesource) getspecvals() {
+func (source *sourcecoderesource) getspecandstatusvals(resource string) {
+	var vmi interface{}
 
-	vmi := &contrailcorev1alpha1.VirtualMachineInterface{}
+	switch resource {
+	case "virtualmachineinterface":
+		vmi = &contrailcorev1alpha1.VirtualMachineInterface{}
+	case "routinginstance":
+		vmi = &contrailcorev1alpha1.RoutingInstance{}
+	}
+
 	val := reflect.Indirect(reflect.ValueOf(vmi))
 	// t := val.Type().String()
 	specField, ok := val.Type().FieldByName("Spec")
@@ -57,21 +64,9 @@ func (source *sourcecoderesource) getspecvals() {
 			source.Parents = append(source.Parents, "Parent")
 		}
 	}
-	// fmt.Println("SpecField", specField)
-	// fmt.Println("Type", t)
-}
-
-func (source *sourcecoderesource) getstatusvals() {
-	vmi := &contrailcorev1alpha1.VirtualMachineInterface{}
-	val := reflect.Indirect(reflect.ValueOf(vmi))
-	// t := val.Type().String()
 	statusField, ok := val.Type().FieldByName("Status")
-	if !ok {
-		fmt.Println("no status field")
-	}
 	statusval := reflect.Indirect(reflect.ValueOf(statusField))
 	statusFieldNum := reflect.TypeOf(statusval).NumField()
-
 	for i := 0; i < statusFieldNum; i++ {
 		f := statusField.Type.Field(i)
 		referencesvisited := false
@@ -92,6 +87,4 @@ func (source *sourcecoderesource) getstatusvals() {
 			source.Parents = append(source.Parents, parentFieldList[0])
 		}
 	}
-	// fmt.Println("SpecField", statusField)
-	// fmt.Println("Type", t)
 }
