@@ -56,12 +56,13 @@ func (r *RoutingInstanceNode) Adder(g *graph.Graph) ([]graph.NodeInterface, erro
 	if err != nil {
 		return nil, err
 	}
+	var originalresource sourcecoderesource
+	//originalresource.getspecandstatusvals("routinginstance")
 	for i := 0; i < len(resourceList.Items); i++ {
 		resource := resourceList.Items[i]
 		r.Resource = resource
 		var edgeSelectorList []graph.EdgeSelector
-		var originalresource sourcecoderesource
-		hashmap := buildhash(g, i, "RoutingInstance")
+		hashmap := buildhash(g.ClientConfig, i, "RoutingInstance")
 		combinedlist := append(originalresource.References, originalresource.Reference...)
 		combinedlist = append(combinedlist, originalresource.Parents...)
 		for i := 0; i < len(combinedlist); i++ {

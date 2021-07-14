@@ -40,8 +40,8 @@ func (source *sourcecoderesource) getspecandstatusvals(resource string) {
 	if !ok {
 		fmt.Println("no spec field")
 	}
-	specVal := reflect.Indirect(reflect.ValueOf(specField))
-	specFieldNum := specVal.NumField()
+	spectype := specField.Type
+	specFieldNum := spectype.NumField()
 	for i := 0; i < specFieldNum; i++ {
 		f := specField.Type.Field(i)
 		referencesvisited := false
@@ -65,8 +65,7 @@ func (source *sourcecoderesource) getspecandstatusvals(resource string) {
 		}
 	}
 	statusField, ok := val.Type().FieldByName("Status")
-	statusval := reflect.Indirect(reflect.ValueOf(statusField))
-	statusFieldNum := reflect.TypeOf(statusval).NumField()
+	statusFieldNum := statusField.Type.NumField()
 	for i := 0; i < statusFieldNum; i++ {
 		f := statusField.Type.Field(i)
 		referencesvisited := false

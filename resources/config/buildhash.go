@@ -5,6 +5,7 @@ import (
 
 	"github.com/michaelhenkel/validator/graph"
 	// "k8s.io/api/apiserverinternal/v1alpha1"
+	"github.com/michaelhenkel/validator/k8s/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -14,10 +15,10 @@ Since we are storing it as an interface, we have to check for the reference type
 @param g -> Takes in a Graph
 @Return map[string][]interface{}
 */
-func buildhash(g *graph.Graph, resourceindex int, instance string) map[string][][]interface{} {
+func buildhash(clientConfig *clientset.Client, resourceindex int, instance string) map[string][][]interface{} {
 	switch instance {
 	case "VirtualMachineInterface":
-		resourceList, err := g.ClientConfig.ContrailCoreV1.VirtualMachineInterfaces("").List(context.Background(), metav1.ListOptions{})
+		resourceList, err := clientConfig.ContrailCoreV1.VirtualMachineInterfaces("").List(context.Background(), metav1.ListOptions{})
 		retmap := make(map[string][][]interface{})
 
 		if err != nil {
@@ -48,7 +49,7 @@ func buildhash(g *graph.Graph, resourceindex int, instance string) map[string][]
 
 		return retmap
 	case "RoutingInstance":
-		resourceList, err := g.ClientConfig.ContrailCoreV1.RoutingInstances("").List(context.Background(), metav1.ListOptions{})
+		resourceList, err := clientConfig.ContrailCoreV1.RoutingInstances("").List(context.Background(), metav1.ListOptions{})
 		retmap := make(map[string][][]interface{})
 		if err != nil {
 			return retmap

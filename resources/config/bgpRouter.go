@@ -77,5 +77,9 @@ func (r *BGPRouterNode) Adder(g *graph.Graph) ([]graph.NodeInterface, error) {
 		}
 		graphNodeList = append(graphNodeList, resourceNode)
 	}
+	// errNode := &BGPRouterNode{
+	// 	Resource: resourceList.Items[0],
+
+	// }
 	return graphNodeList, nil
 }

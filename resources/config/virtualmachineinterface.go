@@ -65,7 +65,7 @@ func (r *VirtualMachineInterfaceNode) Adder(g *graph.Graph) ([]graph.NodeInterfa
 		resource := resourceList.Items[i]
 		r.Resource = resource
 		var edgeSelectorList []graph.EdgeSelector
-		hashmap := buildhash(g, i, "VirtualMachineInterface")
+		hashmap := buildhash(g.ClientConfig, i, "VirtualMachineInterface")
 		combinedlist := append(originalresource.References, originalresource.Reference...)
 		combinedlist = append(combinedlist, originalresource.Parents...)
 		for i := 0; i < len(combinedlist); i++ {
@@ -127,6 +127,17 @@ func (r *VirtualMachineInterfaceNode) Adder(g *graph.Graph) ([]graph.NodeInterfa
 								}
 								edgeSelectorList = append(edgeSelectorList, edgeSelector)
 							}
+						} else {
+							fmt.Println("NODE TYPE IS:", nodetype)
+							fmt.Println("Name IS:", name)
+							edgeSelector := graph.EdgeSelector{
+								NodeType: nodetype,
+								Plane:    graph.ConfigPlane,
+								MatchValues: []graph.MatchValue{{
+									Value: map[string]string{name: "error"},
+								}},
+							}
+							edgeSelectorList = append(edgeSelectorList, edgeSelector)
 						}
 
 					}
@@ -136,7 +147,6 @@ func (r *VirtualMachineInterfaceNode) Adder(g *graph.Graph) ([]graph.NodeInterfa
 			}
 		}
 		if _, ok := hashmap["Parent"]; ok {
-			fmt.Println("Parent Found for Virtual Router! Name is: ", resource.Spec.Parent.Name)
 			edgeSelector := graph.EdgeSelector{
 				NodeType: graph.VirtualRouter,
 				Plane:    graph.ConfigPlane,

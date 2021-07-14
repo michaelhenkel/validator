@@ -284,16 +284,25 @@ type NodeFilterOption struct {
 func (g *Graph) GetNodeEdge(node NodeInterface, filterOpts NodeFilterOption) []NodeInterface {
 	var nodeEdgeList []NodeInterface
 	if sourceNode, ok := g.NodeEdges[node]; ok {
-		for _, targetNode := range sourceNode {
-			if targetNode.Plane() == filterOpts.NodePlane &&
-				targetNode.Type() == filterOpts.NodeType {
-				nodeEdgeList = append(nodeEdgeList, targetNode)
-			}
-
+		retchan := make(chan NodeInterface)
+		go g.GetNodeEdgeworker(0, len(sourceNode)/2, node, filterOpts, retchan)
+		go g.GetNodeEdgeworker(len(sourceNode)/2, len(sourceNode), node, filterOpts, retchan)
+		for i := 0; i < len(sourceNode); i++ {
+			nodeEdgeList = append(nodeEdgeList, <-retchan)
 		}
-
 	}
 	return nodeEdgeList
+}
+
+func (g *Graph) GetNodeEdgeworker(start int, end int, node NodeInterface, filterOpts NodeFilterOption, retchan chan NodeInterface) {
+	sourceNode := g.NodeEdges[node]
+	for i := start; i < end; i++ {
+		targetNode := sourceNode[i]
+		if targetNode.Plane() == filterOpts.NodePlane && targetNode.Type() == filterOpts.NodeType {
+			retchan <- targetNode
+		}
+	}
+
 }
 
 type GraphWalker struct {
