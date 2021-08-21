@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/michaelhenkel/validator/graph"
+	"github.com/s3kim2018/validator/graph"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	introspectcontrolv1alpha1 "github.com/michaelhenkel/introspect/pkg/apis/control/v1alpha1"
@@ -85,20 +85,22 @@ func (r *RoutingInstanceNode) Adder(g *graph.Graph) ([]graph.NodeInterface, erro
 			for _, resource := range routingInstanceList.Instances.List.ShowRoutingInstance {
 				r.Resource = resource
 				routingInstanceNameList := strings.Split(resource.Name.Text, ":")
-				resourceNode := &RoutingInstanceNode{
-					Resource: resource,
-					EdgeSelectors: []graph.EdgeSelector{{
-						NodeType: graph.RoutingInstance,
-						Plane:    graph.ConfigPlane,
-						MatchValues: []graph.MatchValue{{
+				if len(routingInstanceNameList) > 3 {
+					resourceNode := &RoutingInstanceNode{
+						Resource: resource,
+						EdgeSelectors: []graph.EdgeSelector{{
+							NodeType: graph.RoutingInstance,
+							Plane:    graph.ConfigPlane,
+							MatchValues: []graph.MatchValue{{
+								Value: map[string]string{"RoutingInstanceName": fmt.Sprintf("%s/%s", routingInstanceNameList[1], routingInstanceNameList[3])},
+							}},
+						}},
+						EdgeLabels: []graph.EdgeLabel{{
 							Value: map[string]string{"RoutingInstanceName": fmt.Sprintf("%s/%s", routingInstanceNameList[1], routingInstanceNameList[3])},
 						}},
-					}},
-					EdgeLabels: []graph.EdgeLabel{{
-						Value: map[string]string{"RoutingInstanceName": fmt.Sprintf("%s/%s", routingInstanceNameList[1], routingInstanceNameList[3])},
-					}},
+					}
+					graphNodeList = append(graphNodeList, resourceNode)
 				}
-				graphNodeList = append(graphNodeList, resourceNode)
 			}
 		}
 	}

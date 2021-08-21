@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/michaelhenkel/validator/graph"
+	"github.com/s3kim2018/validator/graph"
 	"ssd-git.juniper.net/contrail/cn2/contrail/pkg/apis/core/v1alpha1"
 
 	//intserver "k8s.io/api/apiserverinternal/v1alpha1"
@@ -77,8 +77,6 @@ func (r *VirtualMachineInterfaceNode) Adder(g *graph.Graph) ([]graph.NodeInterfa
 					primaryname := combinedlist[i]
 					name := primaryname + "Name"
 					switch thetype := reference.(type) {
-					default:
-						fmt.Println("Unexpected Type")
 					case []v1alpha1.RoutingInstanceReference:
 						if thetype != nil {
 							for _, routingInstanceReference := range thetype {
@@ -98,6 +96,7 @@ func (r *VirtualMachineInterfaceNode) Adder(g *graph.Graph) ([]graph.NodeInterfa
 						}
 					case []v1alpha1.ResourceReference:
 						if thetype != nil {
+							fmt.Println("Thetype resourcereferences is not nil! ")
 							for _, resourcereference := range thetype {
 								val := reflect.Indirect(reflect.ValueOf(resourcereference))
 								_, ok := val.Type().FieldByName("Name")
@@ -112,12 +111,15 @@ func (r *VirtualMachineInterfaceNode) Adder(g *graph.Graph) ([]graph.NodeInterfa
 									edgeSelectorList = append(edgeSelectorList, edgeSelector)
 								}
 							}
+						} else {
+							fmt.Println("Thetype resourcereferences is nil :( ")
 						}
 					case *v1alpha1.ResourceReference:
 						if thetype != nil {
 							val := reflect.Indirect(reflect.ValueOf(thetype))
 							_, ok := val.Type().FieldByName("Name")
 							if ok {
+								fmt.Println("Shouldn't be okay...")
 								edgeSelector := graph.EdgeSelector{
 									NodeType: nodetype,
 									Plane:    graph.ConfigPlane,
@@ -128,18 +130,8 @@ func (r *VirtualMachineInterfaceNode) Adder(g *graph.Graph) ([]graph.NodeInterfa
 								edgeSelectorList = append(edgeSelectorList, edgeSelector)
 							}
 						} else {
-							fmt.Println("NODE TYPE IS:", nodetype)
-							fmt.Println("Name IS:", name)
-							edgeSelector := graph.EdgeSelector{
-								NodeType: nodetype,
-								Plane:    graph.ConfigPlane,
-								MatchValues: []graph.MatchValue{{
-									Value: map[string]string{name: "error"},
-								}},
-							}
-							edgeSelectorList = append(edgeSelectorList, edgeSelector)
+							fmt.Println("Thetype is nil :( ")
 						}
-
 					}
 
 				}

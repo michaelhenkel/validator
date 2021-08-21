@@ -3,9 +3,9 @@ package resources
 import (
 	"context"
 
-	"github.com/michaelhenkel/validator/graph"
+	"github.com/s3kim2018/validator/graph"
 	// "k8s.io/api/apiserverinternal/v1alpha1"
-	"github.com/michaelhenkel/validator/k8s/clientset"
+	"github.com/s3kim2018/validator/k8s/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 

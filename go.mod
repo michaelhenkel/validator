@@ -1,4 +1,4 @@
-module github.com/michaelhenkel/validator
+module github.com/s3kim2018/validator
 
 go 1.15
 

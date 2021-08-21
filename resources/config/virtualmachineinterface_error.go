@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/michaelhenkel/validator/k8s/clientset"
+	"github.com/s3kim2018/validator/k8s/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"ssd-git.juniper.net/contrail/cn2/contrail/pkg/apis/core/v1alpha1"
 )
 
-func VirtualMachineInterfaceErrorNode(clientConfig *clientset.Client) ([]errornode, error) {
-	var graphNodeList []errornode
+func VirtualMachineInterfaceErrorNode(clientConfig *clientset.Client) ([]Errornode, error) {
+	var graphNodeList []Errornode
 	resourceList, err := clientConfig.ContrailCoreV1.VirtualMachineInterfaces("").List(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		return nil, err
@@ -36,13 +36,20 @@ func VirtualMachineInterfaceErrorNode(clientConfig *clientset.Client) ([]errorno
 								val := reflect.Indirect(reflect.ValueOf(routingInstanceReference))
 								_, ok := val.Type().FieldByName("Name")
 								if !ok {
-									errnode := errornode{
+									errnode := Errornode{
 										Name:  "missing " + combinedlist[i],
 										Edges: []string{resource.Name},
 									}
 									graphNodeList = append(graphNodeList, errnode)
 								}
 							}
+						} else {
+							errnode := Errornode{
+								Name:  "missing " + combinedlist[i],
+								Edges: []string{resource.Namespace + ":" + resource.Name},
+							}
+							fmt.Println("parent name is", resource.Namespace+":"+resource.Name)
+							graphNodeList = append(graphNodeList, errnode)
 						}
 					case []v1alpha1.ResourceReference:
 						if thetype != nil {
@@ -50,25 +57,39 @@ func VirtualMachineInterfaceErrorNode(clientConfig *clientset.Client) ([]errorno
 								val := reflect.Indirect(reflect.ValueOf(resourcereference))
 								_, ok := val.Type().FieldByName("Name")
 								if !ok {
-									errnode := errornode{
+									errnode := Errornode{
 										Name:  "missing " + combinedlist[i],
 										Edges: []string{resource.Name},
 									}
 									graphNodeList = append(graphNodeList, errnode)
 								}
 							}
+						} else {
+							errnode := Errornode{
+								Name:  "missing " + combinedlist[i],
+								Edges: []string{resource.Namespace + ":" + resource.Name},
+							}
+							fmt.Println("parent name is", resource.Namespace+":"+resource.Name)
+							graphNodeList = append(graphNodeList, errnode)
 						}
 					case *v1alpha1.ResourceReference:
 						if thetype != nil {
 							val := reflect.Indirect(reflect.ValueOf(thetype))
 							_, ok := val.Type().FieldByName("Name")
 							if !ok {
-								errnode := errornode{
+								errnode := Errornode{
 									Name:  "missing " + combinedlist[i],
 									Edges: []string{resource.Name},
 								}
 								graphNodeList = append(graphNodeList, errnode)
 							}
+						} else {
+							errnode := Errornode{
+								Name:  "missing " + combinedlist[i],
+								Edges: []string{resource.Namespace + ":" + resource.Name},
+							}
+							fmt.Println("parent name is", resource.Namespace+":"+resource.Name)
+							graphNodeList = append(graphNodeList, errnode)
 						}
 					}
 

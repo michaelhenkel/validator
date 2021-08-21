@@ -1,7 +1,7 @@
 package resources
 
 import (
-	"github.com/michaelhenkel/validator/graph"
+	"github.com/s3kim2018/validator/graph"
 )
 
 var plane = graph.ConfigPlane

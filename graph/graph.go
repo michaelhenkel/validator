@@ -3,10 +3,9 @@ package graph
 import (
 	"fmt"
 	"reflect"
-	"sync"
 
 	"github.com/go-echarts/go-echarts/v2/opts"
-	"github.com/michaelhenkel/validator/k8s/clientset"
+	"github.com/s3kim2018/validator/k8s/clientset"
 )
 
 type NodeType string
@@ -42,6 +41,35 @@ const (
 	ErrorCategory           Category = "errorCategory"
 )
 
+var TypeMap = map[string]NodeType{
+	"vrouter":                 Vrouter,
+	"virtualRouter":           VirtualRouter,
+	"pod":                     Pod,
+	"control":                 Control,
+	"bgpRouter":               BGPRouter,
+	"bgpNeighbor":             BGPNeighbor,
+	"configMap":               ConfigMap,
+	"configFile":              ConfigFile,
+	"routingInstance":         RoutingInstance,
+	"virtualMachineInterface": VirtualMachineInterface,
+	"virtualMachine":          VirtualMachine,
+	"virtualNetwork":          VirtualNetwork,
+	"kubemanager":             Kubemanager,
+	"k8snode":                 K8SNode,
+	"errorNode":               ErrNode,
+}
+
+var PlaneMap = map[string]Plane{
+	"configPlane":  ConfigPlane,
+	"controlPlane": ControlPlane,
+	"dataPlane":    DataPlane,
+}
+
+var PlaneMap2 = map[string]Plane{
+	"Config":  ConfigPlane,
+	"Control": ControlPlane,
+	"Data":    DataPlane,
+}
 var CategoryColorMap = map[Category]*opts.ItemStyle{
 	ControlCategory: {
 		Color: "violet",
@@ -99,7 +127,6 @@ type GraphNode struct {
 }
 
 type Graph struct {
-	mu           sync.Mutex
 	nodes        map[GraphNode]struct{}
 	ClientConfig *clientset.Client
 	NodeEdges    map[NodeInterface][]NodeInterface
@@ -160,23 +187,8 @@ func NewGraph(clientConfig *clientset.Client) *Graph {
 }
 
 func (g *Graph) EdgeMatcher() {
-	var worklist []GraphNode
-	c := make(chan int)
-	for graphNode := range g.nodes {
-		worklist = append(worklist, graphNode)
-	}
-	worklistlen := len(worklist)
-	go g.EdgeMatchWorker(worklist[0:worklistlen/3], c)
-	go g.EdgeMatchWorker(worklist[worklistlen/3:(worklistlen*2/3)], c)
-	go g.EdgeMatchWorker(worklist[(worklistlen*2/3):], c)
-	fmt.Println(<-c)
-	fmt.Println(<-c)
-	fmt.Println(<-c)
-}
-
-func (g *Graph) EdgeMatchWorker(workload []GraphNode, c chan int) {
 	g.NodeEdges = make(map[NodeInterface][]NodeInterface)
-	for _, graphNode := range workload {
+	for graphNode := range g.nodes {
 		for _, nodeEdgeSelector := range graphNode.Node.GetEdgeSelectors() {
 			for _, dstNodeInterface := range g.GetNodesByTypePlane(nodeEdgeSelector.NodeType, nodeEdgeSelector.Plane) {
 				for _, dstEdgeLabel := range dstNodeInterface.GetEdgeLabels() {
@@ -193,16 +205,13 @@ func (g *Graph) EdgeMatchWorker(workload []GraphNode, c chan int) {
 					}
 					if match {
 						fmt.Printf("Found edge from %s:%s to %s:%s\n", graphNode.Node.Type(), graphNode.Node.Name(), dstNodeInterface.Type(), dstNodeInterface.Name())
-						g.mu.Lock()
 						g.NodeEdges[graphNode.Node] = append(g.NodeEdges[graphNode.Node], dstNodeInterface)
 						g.NodeEdges[dstNodeInterface] = append(g.NodeEdges[dstNodeInterface], graphNode.Node)
-						g.mu.Unlock()
 					}
 				}
 			}
 		}
 	}
-	c <- 0
 }
 
 func (g *Graph) NodeAdder(adder func(g *Graph) ([]NodeInterface, error)) *Graph {
@@ -284,25 +293,16 @@ type NodeFilterOption struct {
 func (g *Graph) GetNodeEdge(node NodeInterface, filterOpts NodeFilterOption) []NodeInterface {
 	var nodeEdgeList []NodeInterface
 	if sourceNode, ok := g.NodeEdges[node]; ok {
-		retchan := make(chan NodeInterface)
-		go g.GetNodeEdgeworker(0, len(sourceNode)/2, node, filterOpts, retchan)
-		go g.GetNodeEdgeworker(len(sourceNode)/2, len(sourceNode), node, filterOpts, retchan)
-		for i := 0; i < len(sourceNode); i++ {
-			nodeEdgeList = append(nodeEdgeList, <-retchan)
+		for _, targetNode := range sourceNode {
+			if targetNode.Plane() == filterOpts.NodePlane &&
+				targetNode.Type() == filterOpts.NodeType {
+				nodeEdgeList = append(nodeEdgeList, targetNode)
+			}
+
 		}
+
 	}
 	return nodeEdgeList
-}
-
-func (g *Graph) GetNodeEdgeworker(start int, end int, node NodeInterface, filterOpts NodeFilterOption, retchan chan NodeInterface) {
-	sourceNode := g.NodeEdges[node]
-	for i := start; i < end; i++ {
-		targetNode := sourceNode[i]
-		if targetNode.Plane() == filterOpts.NodePlane && targetNode.Type() == filterOpts.NodeType {
-			retchan <- targetNode
-		}
-	}
-
 }
 
 type GraphWalker struct {

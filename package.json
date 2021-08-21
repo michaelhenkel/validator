@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "cytoscape-spread": "^3.0.0"
+  }
+}

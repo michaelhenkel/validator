@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/michaelhenkel/validator/k8s/clientset"
+	"github.com/s3kim2018/validator/k8s/clientset"
 	"github.com/spf13/cobra"
 )
 

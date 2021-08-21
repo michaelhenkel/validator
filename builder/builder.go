@@ -2,16 +2,15 @@ package builder
 
 import (
 	"github.com/go-echarts/go-echarts/v2/components"
-	"github.com/michaelhenkel/validator/graph"
-	"github.com/michaelhenkel/validator/k8s/clientset"
-	"github.com/michaelhenkel/validator/render"
-	configresources "github.com/michaelhenkel/validator/resources/config"
-	controlresources "github.com/michaelhenkel/validator/resources/control"
-	dataresources "github.com/michaelhenkel/validator/resources/data"
+	"github.com/s3kim2018/validator/graph"
+	"github.com/s3kim2018/validator/k8s/clientset"
+	"github.com/s3kim2018/validator/render"
+	configresources "github.com/s3kim2018/validator/resources/config"
+	controlresources "github.com/s3kim2018/validator/resources/control"
+	dataresources "github.com/s3kim2018/validator/resources/data"
 )
 
 func BuildGraph(clientConfig *clientset.Client) *graph.Graph {
-
 	g := graph.NewGraph(clientConfig)
 	virtualRouter := configresources.VirtualRouterNode{}
 	bgpNeighbor := controlresources.BGPNeighborNode{}
