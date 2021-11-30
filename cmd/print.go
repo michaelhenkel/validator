@@ -3,9 +3,9 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/michaelhenkel/validator/builder"
-	"github.com/michaelhenkel/validator/graph"
-	"github.com/michaelhenkel/validator/walker"
+	"github.com/s3kim2018/validator/builder"
+	"github.com/s3kim2018/validator/graph"
+	"github.com/s3kim2018/validator/walker"
 	"github.com/spf13/cobra"
 )
 

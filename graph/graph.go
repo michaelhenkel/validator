@@ -5,7 +5,7 @@ import (
 	"reflect"
 
 	"github.com/go-echarts/go-echarts/v2/opts"
-	"github.com/michaelhenkel/validator/k8s/clientset"
+	"github.com/s3kim2018/validator/k8s/clientset"
 )
 
 type NodeType string
@@ -41,6 +41,35 @@ const (
 	ErrorCategory           Category = "errorCategory"
 )
 
+var TypeMap = map[string]NodeType{
+	"vrouter":                 Vrouter,
+	"virtualRouter":           VirtualRouter,
+	"pod":                     Pod,
+	"control":                 Control,
+	"bgpRouter":               BGPRouter,
+	"bgpNeighbor":             BGPNeighbor,
+	"configMap":               ConfigMap,
+	"configFile":              ConfigFile,
+	"routingInstance":         RoutingInstance,
+	"virtualMachineInterface": VirtualMachineInterface,
+	"virtualMachine":          VirtualMachine,
+	"virtualNetwork":          VirtualNetwork,
+	"kubemanager":             Kubemanager,
+	"k8snode":                 K8SNode,
+	"errorNode":               ErrNode,
+}
+
+var PlaneMap = map[string]Plane{
+	"configPlane":  ConfigPlane,
+	"controlPlane": ControlPlane,
+	"dataPlane":    DataPlane,
+}
+
+var PlaneMap2 = map[string]Plane{
+	"Config":  ConfigPlane,
+	"Control": ControlPlane,
+	"Data":    DataPlane,
+}
 var CategoryColorMap = map[Category]*opts.ItemStyle{
 	ControlCategory: {
 		Color: "violet",

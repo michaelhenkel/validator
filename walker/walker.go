@@ -2,10 +2,11 @@ package walker
 
 import (
 	"fmt"
+	"strings"
 
-	"github.com/michaelhenkel/validator/builder"
-	"github.com/michaelhenkel/validator/graph"
-	"github.com/michaelhenkel/validator/k8s/clientset"
+	"github.com/s3kim2018/validator/builder"
+	"github.com/s3kim2018/validator/graph"
+	"github.com/s3kim2018/validator/k8s/clientset"
 )
 
 type GraphWalker struct {
@@ -77,9 +78,11 @@ func (gw *GraphWalker) Walk2(sourceNodes []graph.NodeInterface, filterOpts []gra
 			}
 			nodeInterfaceList = append(nodeInterfaceList, gw.G.GetNodeEdge(sourceNode, filterOpt)...)
 			targetNodes := gw.G.GetNodeEdge(sourceNode, filterOpt)
-			if len(targetNodes) == 0 && filterOpt.ErrorMsg != "" {
+			if len(targetNodes) == 0 {
+				theplane := string(filterOpt.NodePlane)
+				thetype := string(filterOpt.NodeType)
 				errNode := &graph.ErrorNode{
-					NodeName:   fmt.Sprintf("%s\n%s", filterOpt.ErrorMsg, sourceNode.Name()),
+					NodeName:   "ErrorNode, Cannot Find Node of Plane: " + theplane + " And Type: " + thetype + " From Node: " + sourceNode.Name(),
 					ErrorPlane: sourceNode.Plane(),
 				}
 				if _, ok := gw.Result[errNode]; ok {
@@ -89,6 +92,7 @@ func (gw *GraphWalker) Walk2(sourceNodes []graph.NodeInterface, filterOpts []gra
 				}
 				gw.Result[sourceNode] = append(gw.Result[sourceNode], errNode)
 				fmt.Printf("--> %s:%s:%s\n", errNode.Plane(), errNode.Type(), errNode.Name())
+				return nodeInterfaceList
 			} else {
 				for _, targetNode := range targetNodes {
 					if filterOpt.TargetFilter != "" {
@@ -136,14 +140,77 @@ type Walker struct {
 	WalkerFunc func(sourceNodes []graph.NodeInterface, filterOpts []graph.NodeFilterOption) []graph.NodeInterface
 }
 
+type Configurations struct {
+	Sourcenode string   `json:"sourcenode"`
+	Next       []Config `json:"next"`
+}
+
+type Config struct {
+	Thetype  string   `json:"type"`
+	Theplane string   `json:"plane"`
+	Next     []Config `json:"next"`
+}
+
+func Dynamicwalk(client *clientset.Client, config Configurations) map[graph.NodeInterface][]graph.NodeInterface {
+	g := builder.BuildGraph(client)
+	g.EdgeMatcher()
+	fmt.Println(config)
+	sourcelst := strings.Split(config.Sourcenode, "-")
+	nodetype := graph.TypeMap[sourcelst[len(sourcelst)-1]]
+	nodeplane := graph.PlaneMap[sourcelst[len(sourcelst)-2]]
+	name := strings.Join(sourcelst[:len(sourcelst)-2], "-")
+	nodeInterface := g.GetNodeByTypePlaneName(nodetype, nodeplane, name)
+	fmt.Println(nodeInterface, "Thenodeinterface")
+	var sourceNodeInterfaceList []graph.NodeInterface
+	sourceNodeInterfaceList = append(sourceNodeInterfaceList, nodeInterface)
+	graphWalker := GraphWalker{
+		G:           g,
+		SourceNodes: sourceNodeInterfaceList,
+	}
+	w := Walker{}
+	for _, elem := range config.Next {
+		pointer := &w
+		pointer.helper(elem, &graphWalker)
+	}
+	w.runner(sourceNodeInterfaceList)
+	fmt.Println("The Walker: ", w)
+	fmt.Println("The Result", graphWalker.Result)
+	return graphWalker.Result
+
+}
+func (w *Walker) helper(queue Config, graphwalker *GraphWalker) {
+	configuration := queue
+	nodetype := graph.TypeMap[configuration.Thetype]
+	nodeplane := graph.PlaneMap2[configuration.Theplane]
+	fmt.Println(configuration.Thetype)
+	w.FilterOpts = append(w.FilterOpts, graph.NodeFilterOption{
+		NodeType:  nodetype,
+		NodePlane: nodeplane,
+	})
+	w.WalkerFunc = graphwalker.Walk2
+	for _, newconfig := range configuration.Next {
+		newwalker := Walker{}
+		newwalkerpointer := &newwalker
+		newwalkerpointer.helper(newconfig, graphwalker)
+		w.Next = append(w.Next, newwalker)
+	}
+}
 func WalkTest(client *clientset.Client, nodeType graph.NodeType, plane graph.Plane, name string) map[graph.NodeInterface][]graph.NodeInterface {
 	g := builder.BuildGraph(client)
 	g.EdgeMatcher()
-	return walker2Map[nodeType](g, nodeType, plane, name)
+	return podToVrouter(g, nodeType, plane, name)
+	//return walker2Map[nodeType](g, nodeType, plane, name)
 }
 
 func (w Walker) runner(sourceNodes []graph.NodeInterface) {
+	// fmt.Println("Runner Running!")
+	// for _, elem := range w.FilterOpts {
+	// 	fmt.Println(elem.NodeType)
+	// }
+	fmt.Println(w.FilterOpts)
 	nextSourceNodes := w.WalkerFunc(sourceNodes, w.FilterOpts)
+	// fmt.Println("WHAT", len(w.Next))
+	// fmt.Println(w.Next)
 	if len(w.Next) > 0 {
 		for _, nextWalker := range w.Next {
 			nextWalker.runner(nextSourceNodes)

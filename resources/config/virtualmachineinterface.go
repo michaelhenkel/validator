@@ -3,9 +3,14 @@ package resources
 import (
 	"context"
 	"fmt"
+	"reflect"
 
-	"github.com/michaelhenkel/validator/graph"
+	"github.com/s3kim2018/validator/graph"
+	"ssd-git.juniper.net/contrail/cn2/contrail/pkg/apis/core/v1alpha1"
+
+	//intserver "k8s.io/api/apiserverinternal/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	//"ssd-git.juniper.net/contrail/cn2/contrail/pkg/apis/core/v1alpha1"
 	contrailcorev1alpha1 "ssd-git.juniper.net/contrail/cn2/contrail/pkg/apis/core/v1alpha1"
 )
 
@@ -54,10 +59,86 @@ func (r *VirtualMachineInterfaceNode) Adder(g *graph.Graph) ([]graph.NodeInterfa
 	if err != nil {
 		return nil, err
 	}
-	for _, resource := range resourceList.Items {
+	var originalresource sourcecoderesource
+	originalresource.getspecandstatusvals("virtualmachineinterface")
+	for i := 0; i < len(resourceList.Items); i++ {
+		resource := resourceList.Items[i]
 		r.Resource = resource
 		var edgeSelectorList []graph.EdgeSelector
-		if resource.Spec.Parent.Kind == "VirtualRouter" {
+		hashmap := buildhash(g.ClientConfig, i, "VirtualMachineInterface")
+		combinedlist := append(originalresource.References, originalresource.Reference...)
+		combinedlist = append(combinedlist, originalresource.Parents...)
+		for i := 0; i < len(combinedlist); i++ {
+			if references, ok := hashmap[combinedlist[i]]; ok {
+				for j := 0; j < len(references); j++ {
+					reference := references[j][0]
+					var nodetype graph.NodeType
+					nodetype = references[j][1].(graph.NodeType)
+					primaryname := combinedlist[i]
+					name := primaryname + "Name"
+					switch thetype := reference.(type) {
+					case []v1alpha1.RoutingInstanceReference:
+						if thetype != nil {
+							for _, routingInstanceReference := range thetype {
+								val := reflect.Indirect(reflect.ValueOf(routingInstanceReference))
+								_, ok := val.Type().FieldByName("Name")
+								if ok {
+									edgeSelector := graph.EdgeSelector{
+										NodeType: nodetype,
+										Plane:    graph.ConfigPlane,
+										MatchValues: []graph.MatchValue{{
+											Value: map[string]string{name: routingInstanceReference.Name},
+										}},
+									}
+									edgeSelectorList = append(edgeSelectorList, edgeSelector)
+								}
+							}
+						}
+					case []v1alpha1.ResourceReference:
+						if thetype != nil {
+							fmt.Println("Thetype resourcereferences is not nil! ")
+							for _, resourcereference := range thetype {
+								val := reflect.Indirect(reflect.ValueOf(resourcereference))
+								_, ok := val.Type().FieldByName("Name")
+								if ok {
+									edgeSelector := graph.EdgeSelector{
+										NodeType: nodetype,
+										Plane:    graph.ConfigPlane,
+										MatchValues: []graph.MatchValue{{
+											Value: map[string]string{name: resourcereference.Name},
+										}},
+									}
+									edgeSelectorList = append(edgeSelectorList, edgeSelector)
+								}
+							}
+						} else {
+							fmt.Println("Thetype resourcereferences is nil :( ")
+						}
+					case *v1alpha1.ResourceReference:
+						if thetype != nil {
+							val := reflect.Indirect(reflect.ValueOf(thetype))
+							_, ok := val.Type().FieldByName("Name")
+							if ok {
+								fmt.Println("Shouldn't be okay...")
+								edgeSelector := graph.EdgeSelector{
+									NodeType: nodetype,
+									Plane:    graph.ConfigPlane,
+									MatchValues: []graph.MatchValue{{
+										Value: map[string]string{name: thetype.Name},
+									}},
+								}
+								edgeSelectorList = append(edgeSelectorList, edgeSelector)
+							}
+						} else {
+							fmt.Println("Thetype is nil :( ")
+						}
+					}
+
+				}
+
+			}
+		}
+		if _, ok := hashmap["Parent"]; ok {
 			edgeSelector := graph.EdgeSelector{
 				NodeType: graph.VirtualRouter,
 				Plane:    graph.ConfigPlane,
@@ -67,17 +148,6 @@ func (r *VirtualMachineInterfaceNode) Adder(g *graph.Graph) ([]graph.NodeInterfa
 			}
 			edgeSelectorList = append(edgeSelectorList, edgeSelector)
 		}
-		for _, routingInstanceReference := range resource.Status.RoutingInstanceReferences {
-			edgeSelector := graph.EdgeSelector{
-				NodeType: graph.RoutingInstance,
-				Plane:    graph.ConfigPlane,
-				MatchValues: []graph.MatchValue{{
-					Value: map[string]string{"RoutingInstanceName": routingInstanceReference.Name},
-				}},
-			}
-			edgeSelectorList = append(edgeSelectorList, edgeSelector)
-		}
-
 		edgeSelector := graph.EdgeSelector{
 			NodeType: graph.VirtualNetwork,
 			Plane:    graph.ConfigPlane,
@@ -86,17 +156,6 @@ func (r *VirtualMachineInterfaceNode) Adder(g *graph.Graph) ([]graph.NodeInterfa
 			}},
 		}
 		edgeSelectorList = append(edgeSelectorList, edgeSelector)
-
-		for _, virtualMachineReference := range resource.Spec.VirtualMachineReferences {
-			edgeSelector := graph.EdgeSelector{
-				NodeType: graph.VirtualMachine,
-				Plane:    graph.ConfigPlane,
-				MatchValues: []graph.MatchValue{{
-					Value: map[string]string{"VirtualMachineName": virtualMachineReference.Name},
-				}},
-			}
-			edgeSelectorList = append(edgeSelectorList, edgeSelector)
-		}
 		resourceNode := &VirtualMachineInterfaceNode{
 			Resource: resource,
 			EdgeLabels: []graph.EdgeLabel{{

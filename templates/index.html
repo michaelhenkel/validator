@@ -1,0 +1,280 @@
+<head>
+    <title>Contrail CN2 Graph</title>
+    <!-- Font Awesome -->
+    <link
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css"
+    rel="stylesheet"
+    />
+    <!-- Google Fonts -->
+    <link
+    href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap"
+    rel="stylesheet"
+    />
+    <!-- MDB -->
+    <link
+    href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/3.6.0/mdb.min.css"
+    rel="stylesheet"
+    />
+    <!-- MDB -->
+    <script
+    type="text/javascript"
+    src="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/3.6.0/mdb.min.js"
+    ></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans&display=swap" rel="stylesheet">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://unpkg.com/layout-base/layout-base.js"></script>
+    <script src="https://unpkg.com/cose-base/cose-base.js"></script>
+    <script src="static/js/cytoscape-cose-bilkent.js"></script>
+    <script src="https://unpkg.com/cytoscape/dist/cytoscape.min.js"></script>
+    <script src="https://unpkg.com/weaverjs@1.2.0/dist/weaver.min.js"></script>
+    <script src="/static/js/cytoscape-spread.js"></script>
+    <link rel="stylesheet" href="/static/css/index.css">
+</head>
+
+<script src = "/static/js/index.js"></script>
+
+
+<body style = "height: 100%">
+    <div id = "topheader" style = "width: 100%; height: 45px; background-color: #444444; display: flex;">
+        <img src = "/static/img/logo.png" style = "width: 45px; height: 45px; margin-left: 20px; margin-right: 20px;">
+        <div style = "margin-top: 6px;"> <span id = "firstheader">Juniper Networks</span><br><span id = "secondheader">CN2 VISUALIZER</span></div>
+        <div id = "flexparent" style = "flex-grow: 1">
+            <p id = "questionmark" style = "font-size: 33px; order: 2; line-height: 40px; margin-top: 2.5px; float: right; padding-left: 10px; padding-right: 10px; margin-right: 15px;">?</p>
+        </div>
+    </div>
+    <div id = "header" style = "width: 100%; height: 50px; background-color: #1398a5; display: flex;">
+        <p id = "monitoropt" class = "elem">Monitor</p>
+        <p id = "settingsopt" class = "elem">Settings</p>
+
+        <p id = "helpopt" class = "elem">Help</p>
+    </div>
+    <div id = "monitor">
+        <div id = "first" style = "top: 0; width: 70%; float: right;"> 
+
+            <div id = "hiddeninfo" style = "display: none;">
+                <div id = "nodenames">
+                    {{range .Names}}
+                        <p class = "name">{{.}}</p>
+                    {{end}}
+                </div>
+                <div id = "nodeedgekeyname">
+                    {{range $index, $element := .Edges}}
+                        <p class = "key">{{$index}}</p>
+                    {{end}}
+                </div>
+                <div id = "nodeedges">
+                    {{range $index, $element := .Edges}}
+                        <h3 class = "key">{{$index}}
+    
+                        {{range $element}}
+                            <p class = "edge">{{.}}</p>
+                        {{end}}
+                        </h3>
+    
+                    {{end}}
+                </div>
+            
+                <div id = "nodeplanes">
+                    {{range $index, $element := .Planes}}
+                        <h3 class = "key">{{$index}}</h3>
+                        <p class = "val">{{$element}}</p>
+                        <br>
+                    {{end}}
+                </div>
+                <div id = "nodetypes">
+                    {{range $index, $element := .Types}}
+                        <h3 class = "key">{{$index}}</h3>
+                        <p class = "val">{{$element}}</p>
+                        <br>
+                    {{end}}
+                </div>
+            
+            </div>
+            <div id = "container" style = "overflow-y: hidden;">
+                <div id = "main">
+                    <div id="cy"></div>
+                    <div id = "footer">
+                        <div id = "keys">
+                
+                        </div>
+                        <div id = "desc">
+                            <div style = "width: 90%; margin: auto;">
+                                <p style = "font-weight: bold; padding-top: 5px">Name: <span style = "font-weight: normal;" id = "descname"></span></p>
+                                <p style = "font-weight: bold;">Plane: <span style = "font-weight: normal;" id = "planename"></span></p>
+                                <p style = "font-weight: bold;">Type: <span style = "font-weight: normal;" id = "typename"></span></p>
+                                <p style = "font-weight: bold; text-align: center;">Click on the node for further details</p>
+                            </div>
+                        </div>
+                    </div>        
+                
+                </div>
+            </div>
+        </div>
+        <aside id = "sidebar" class="side-nav sn-bg-4 fixed" style = "height: calc(100% - 95px); overflow-y: auto;">
+            <!-- Tabs navs -->
+                <ul class="nav nav-tabs mb-3" id="ex1" role="tablist">
+                    <li class="nav-item" role="presentation">
+                    <a class="nav-link active" id="ex1-tab-1" data-mdb-toggle="tab" href="#ex1-tabs-1" role="tab" aria-controls="ex1-tabs-1" aria-selected="true">Node</a>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                    <a class="nav-link" id="ex1-tab-2" data-mdb-toggle="tab" href="#ex1-tabs-2" role="tab" aria-controls="ex1-tabs-2" aria-selected="false">Walker</a>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                    <a class="nav-link" id="ex1-tab-3" data-mdb-toggle="tab" href="#ex1-tabs-3" role="tab" aria-controls="ex1-tabs-3" aria-selected="false">ComponentInfo</a>
+                    </li>
+                </ul>
+                <!-- Tabs navs -->
+                
+                <!-- Tabs content -->
+                <div class="tab-content" id="ex1-content" style = "padding: 0px; margin-right: 10px;">
+                    <div class="tab-pane fade show active" id="ex1-tabs-1" role="tabpanel" aria-labelledby="ex1-tab-1">
+                        <div class="accordion accordion-flush" id="accordionFlushExample">
+                            {{range $type := .UniqTypes}}
+                            <p class = "uniqtypes" style = "display: none">{{$type}}</p>
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="flush-heading@{{$type}}">
+                                    <button class="accordion-button collapsed" type="button" data-mdb-toggle="collapse" data-mdb-target="#flush-collapse{{$type}}" aria-expanded="false" aria-controls="#flush-collapse@{{$type}}">
+                                    {{$type}}
+                                    </button>
+                                </h2>
+                                <div id="flush-collapse{{.}}" class="accordion-collapse collapse" aria-labelledby="flush-heading{{.}}" data-mdb-parent="#accordionFlushExample">
+                                    <div class="accordion-body">
+                                        {{range $index, $element := $.Types}}
+                                            {{if eq $element $type}}
+                                                <p class = "sidebarelem">{{$index}}</p>
+                                            {{end}}
+                                        {{end}}
+                                    </div>
+                                </div>
+                            </div>
+                            {{end}}
+                        </div>  
+                    </div>
+                    <div class="tab-pane fade" id="ex1-tabs-2" role="tabpanel" aria-labelledby="ex1-tab-2">
+                        <form action="/walker" id = "walkerform" method="POST" enctype="multipart/form-data">
+                            <h6 style = "text-align: center;">Upload Configuration Folders</h6>
+                            <input style = "margin: auto; display: block;" type="file" id="myfile" name="myFile">
+                            <textarea name = "thesub" id = "sub" style = "display: none"></textarea>
+                            <button type = "submit" name = "btnSubmit" style = "background-color: greenyellow; margin: auto; display: block;">Submit</button>
+    
+                        </form>
+                        <div style = "width: 100%; border-bottom: 1px dotted black; margin-top: 10px; margin-bottom: 10px;"></div>
+                        <h6 style = "text-align: center;">Build Configuration Files</h6>
+    
+                        <form id = "walkform">
+                            <div class = "block1" style = "width: 90%; margin: auto; padding: 5px; border: 1px black solid; margin-top: 7px;">
+                                <p id = "type" style = "display: none;">SourceNode</p>
+                                <h6 style = "text-align: center;">Level <span id = "level">1</span></h6>
+                                <h6 style = "text-align: center;">Select SourceNode</h6>
+                                <select id = "sourcenodeselector" class="select" style = "width: 90%; margin: auto; display: block;">
+                                    {{range .Names}}
+                                    <option value="{{.}}">{{.}}</option>
+                                    {{end}}
+                                </select>
+                                <button class = "addfilteropts" type="button" style = "margin: auto; display: block; margin-top: 10px;">AddFilterOptions</button>    
+                            </div>
+                        
+                        </form>
+                        <button type = "button" id = "downloadjson" style = "background-color: greenyellow; margin: auto; display: block;">Download Config</button>
+                        <button type = "button" id = "runwalker" style = "background-color: green; color: white; margin: auto; display: block; margin-top: 10px">Run Walker</button>
+    
+                    </div>
+                    <div class="tab-pane fade" id="ex1-tabs-3" role="tabpanel" aria-labelledby="ex1-tab-3">
+                        <div style = "width: 90%; margin: auto">
+                            <h5 style = "margin: 0px; padding: 0px;" class = "sourceheader" id = "Source">Source</h5>
+                            <p style = "margin-bottom: 7px;" id = "sourcecontent"></p>
+                            <h5 style = "margin: 0px; padding: 0px;" class = "sourceheader" id = "Source">Name</h5>
+                            <p style = "margin-bottom: 7px;"  id = "namecontent"></p>
+                            <h5 style = "margin: 0px; padding: 0px;" class = "sourceheader" id = "Plane">Plane</h5>
+                            <p style = "margin-bottom: 7px;"  id = "planecontent"></p>
+                            <h5 style = "margin: 0px; padding: 0px;" class = "sourceheader" id = "Type">Type</h5>
+                            <p style = "margin-bottom: 7px;"  id = "typecontent"></p>
+                            <div class = "bottomline"></div>
+                            <h5 style = "margin: 0px; padding: 0px;" class = "sourceheader" id = "Source">Component Edges</h5>
+                            <p style = "font-size: 12px; margin-bottom: 7px;"  id = "edgecontent"></p>
+                            <h5 style = "margin: 0px; padding: 0px;" class = "sourceheader" id = "Source">Error Detection</h5>
+                            <p style = "font-size: 12px; margin-bottom: 7px;"  id = "errorcontent"></p>
+                        </div>
+    
+                    </div>
+                </div>
+                <!-- Tabs content -->   
+            </aside>
+    </div>
+    <div id = "help" style = "display: none">
+        <h2 style = "text-align: center;">How to use the monitoring tool</h2>
+        <ul>
+            <h4>Component Screening</h4>
+                <img src = "static/img/Component.png" style = "margin: auto; display: block; width: 600px; height: 330px;">
+                <ul style = "margin-bottom: 20px;">
+                    <li>Screen for all necessary components by clicking on the "Monitor" Tab. </li>
+                    <li>Use the Sidebar to find component nodes by type. </li> 
+                    <li>Hovering over a component node will show the node's plane and type.</li>
+                    <li>Click on the nodes for more detailed information. It contains information about itself, its neighbors, and any errors the screener detects </li> 
+                    <li><span style = "color: violet">Violet Nodes</span> stands for components in the ControlCategory.</li> 
+                    <li><span style = "color: green">Green Nodes</span> stands for components in the DataCategory.</li> 
+                    <li><span style = "color: blue">Blue Nodes</span> stands for components in the DeploymentCategory.</li> 
+                    <li><span style = "color: red">Red Nodes</span> stands for components in the ErrorCategory.</li> 
+                    <li>Rectangular Nodes Stands for the ConfigPlane.</li>
+                    <li>Circular Nodes stands for the ControlPlane.</li>
+                    <li>Diamond Nodes stands for the DataPlane.</li>
+
+
+                </ul>
+            <h4>Lazy Error Checking</h4>
+            <img src = "static/img/lazyerror.png" style = "margin: auto; display: block; width: 300px; height: 300px;">
+            <ul style = "margin-bottom: 20px;">
+                <li>CN2 Visualizer checks all adjacent components to a node, and reports nodes not present that is referenced on v1alpha1.</li>
+                <li>There are Exceptions to this rule. Not all components have all v1alpha1 references. A Lazy Error doesn't mean that Contrail is erroring. </li> 
+                <li>This feature can be turned off at settings.</li>
+            </ul>
+            <h4>Building Walks</h4>
+            <img src = "static/img/walks.png" style = "margin: auto; display: block; width: 600px; height: 330px;">
+            <ul style = "margin-bottom: 20px;">
+                <li>If your program uses lots of contrail components, you might want to build a walk to test something like pod creation.</li>
+                <li>Go to the Walker tab on the sidebar. </li> 
+                <li>You can select a source node, and build out a smaller walk that gives you an in depth view of the components.</li>
+                <li>Either Save it as a json file, or run the configurations immediately.</li>
+
+            </ul>
+
+        </ul>
+
+
+    </div>
+    <div id = "settings" style = "display: none">
+        <h2 style = "text-align: center;">Settings for Contrail Monitor</h2>
+        <h5 style = "margin-left: 30px; margin-top: 10px;">1. Graph Options</h5>
+        <label for="grapharrange" style = "margin-left: 40px;">Graph Arrangement:</label>
+        <select name="grapharrange" id="grapharrange">
+            <option value="cose">COSE</option>
+            <option value="bfs">BFS</option>
+            <option value="circle">Circle</option>
+        </select>
+        <label for="showhover" style = "margin-left: 40px;">Show Hover Tag:</label>
+        <select name="showhover" id="showhover">
+            <option value="true">True</option>
+            <option value="false">False</option>
+        </select>
+        <h5 style = "margin-left: 30px; margin-top: 10px;">2. Error Reporting Options</h5>
+        <label for="showlazy" style = "margin-left: 40px;">Show Error Nodes:</label>
+        <select name="showlazy" id="showlazy">
+            <option value="true">True</option>
+            <option value="false">False</option>
+        </select>
+    </div>
+    <div id = "question" style = "display: none">
+        <div style = "text-align: center; margin-top: 20px">
+            <span style = "font-weight: bold;">Developed By Brian Kim and Michael Henkel</span> <br>
+            Contact Michael Henkel at mhenkel@juniper.net <br>
+            Contact Brian Kim at tkddud5088@gmail.com <br>
+            Link for development wiki: https://junipedia.juniper.net/wiki/CN2_Visualization
+        </div>
+
+    </div>
+
+    
+
+</body>

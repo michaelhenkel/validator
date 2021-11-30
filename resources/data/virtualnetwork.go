@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/michaelhenkel/validator/graph"
+	"github.com/s3kim2018/validator/graph"
 
 	introspectdatav1alpha1 "github.com/michaelhenkel/introspect/pkg/apis/data/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

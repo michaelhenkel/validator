@@ -1,6 +1,10 @@
 package walker
 
-import "github.com/michaelhenkel/validator/graph"
+import (
+	"fmt"
+
+	"github.com/s3kim2018/validator/graph"
+)
 
 func podToVrouter(g *graph.Graph, nodeType graph.NodeType, plane graph.Plane, name string) map[graph.NodeInterface][]graph.NodeInterface {
 	nodeInterface := g.GetNodeByTypePlaneName(nodeType, plane, name)
@@ -59,7 +63,6 @@ func podToVrouter(g *graph.Graph, nodeType graph.NodeType, plane graph.Plane, na
 						FilterOpts: []graph.NodeFilterOption{{
 							NodeType:  graph.BGPNeighbor,
 							NodePlane: graph.ControlPlane,
-							ErrorMsg:  "no bgp neighbor for routing instance in control, check xmpp",
 						}},
 						WalkerFunc: graphWalker.Walk2,
 						Next: []Walker{{
@@ -106,6 +109,7 @@ func podToVrouter(g *graph.Graph, nodeType graph.NodeType, plane graph.Plane, na
 		}},
 	}
 	w.runner(sourceNodeInterfaceList)
+	fmt.Println(graphWalker.Result)
 	return graphWalker.Result
 }
 

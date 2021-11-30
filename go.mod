@@ -1,4 +1,4 @@
-module github.com/michaelhenkel/validator
+module github.com/s3kim2018/validator
 
 go 1.15
 
@@ -30,6 +30,7 @@ require (
 	github.com/goccy/go-graphviz v0.0.9 // indirect
 	github.com/michaelhenkel/introspect v0.0.0-20210504231118-0f6686c24caa // indirect
 	github.com/spf13/cobra v1.1.3
+	github.com/traefik/yaegi v0.9.18
 	gonum.org/v1/gonum v0.0.0-20190331200053-3d26580ed485
 	gopkg.in/ini.v1 v1.51.0
 	gopkg.in/yaml.v2 v2.4.0

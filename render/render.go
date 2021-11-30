@@ -6,7 +6,7 @@ import (
 	"github.com/go-echarts/go-echarts/v2/charts"
 	"github.com/go-echarts/go-echarts/v2/components"
 	"github.com/go-echarts/go-echarts/v2/opts"
-	"github.com/michaelhenkel/validator/graph"
+	"github.com/s3kim2018/validator/graph"
 )
 
 func graphNodes(nodeEdges map[graph.NodeInterface][]graph.NodeInterface) []opts.GraphNode {
